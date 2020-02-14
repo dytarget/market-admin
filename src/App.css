@@ -1,0 +1,29 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+.login-container {
+  width: 400px;
+  margin: auto;
+  height: 60;
+  padding-top: 40vh;
+}
+
+#components-layout-demo-top-side .logo {
+  width: 120px;
+  height: 31px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 16px 28px 16px 0;
+  float: left;
+}
+
+.photos-delete-container{
+  display: flex;
+  margin: 20px 10px;
+  align-items: center;
+}
