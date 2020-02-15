@@ -36,7 +36,6 @@ export default class Categories extends React.Component {
     name_update: "",
     image_old: "",
     image_update: "",
-    language: "KK",
     visibleUpdate: false
   };
 
@@ -48,8 +47,7 @@ export default class Categories extends React.Component {
     const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
     const headers = {
-      Authorization: `Bearer ${token}`,
-      "Accept-Language": this.state.language
+      Authorization: `Bearer ${token}`
     };
     axios
       .get(`${url}api/v1/category`, {
@@ -73,46 +71,32 @@ export default class Categories extends React.Component {
       method: "POST",
       url: `${url}api/v1/category`,
       headers: {
-        Authorization: `Bearer ${token}`,
-        "Accept-Language": "RU"
+        Authorization: `Bearer ${token}`
       },
       data: {
-        name: this.state.nameRu
+        categoryName: this.state.nameRu,
+        categoryNameKz: this.state.nameKz
       },
       json: true
     };
-    this.setState({ spinning: true });
+    this.setState({ spinning: true, editModal: false });
     axios(authOptions)
       .then(res => {
-        this.refresh();
-        const authOptionsKZ = {
-          method: "PATCH",
-          url: `${url}api/v1/category/${res.data.id}`,
+        const file = new FormData();
+        file.append("file", this.state.image);
+
+        const authOptions2 = {
+          method: "POST",
+          url: `${url}api/v1/image/category/${res.data.id}`,
           headers: {
             Authorization: `Bearer ${token}`,
-            "Accept-Language": "KK"
+            "Content-Type": "multipart/form-data"
           },
-          data: {
-            name: this.state.nameKz
-          },
-          json: true
+          data: file
         };
-        axios(authOptionsKZ).then(res => {
-          const file = new FormData();
-          file.append("file", this.state.image_update);
-          const authOptions2 = {
-            method: "POST",
-            url: `${url}api/v1/image/category/${res.data.id}`,
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/x-www-form-urlencoded"
-            },
-            data: file
-          };
-          axios(authOptions2).then(() => {
-            this.refresh();
-            message.success("Успешно!");
-          });
+        axios(authOptions2).then(() => {
+          this.refresh();
+          message.success("Успешно!");
         });
       })
       .catch(err => {
@@ -121,31 +105,51 @@ export default class Categories extends React.Component {
       });
   };
 
-  onSelect = value => {
-    this.setState({ language: value }, () => this.refresh());
-  };
-
   handleUpdate = () => {
     const { token } = store.getState().userReducer;
-    const headers = {
-      Authorization: `Bearer ${token}`,
-      "Accept-Language": this.state.language
+    const authOptions = {
+      method: "PATCH",
+      url: `${url}api/v1/category/${this.state.id}`,
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      data: {
+        categoryName: this.state.nameRu,
+        categoryNameKz: this.state.nameKz
+      },
+      json: true
     };
-    this.setState({ spinning: true });
-    axios
-      .patch(
-        `${url}api/v1/category/${this.state.id}`,
-        { name: this.state.name_update },
-        {
-          headers
-        }
-      )
+    this.setState({ spinning: true, editModal: false });
+    axios(authOptions)
       .then(res => {
-        this.setState({ visibleUpdate: false });
-        this.refresh();
+        axios
+          .delete(`${url}api/v1/image/${this.state.image_old.id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
+          .then(res => {
+            const file = new FormData();
+            file.append("file", this.state.image_update);
+
+            const authOptions2 = {
+              method: "POST",
+              url: `${url}api/v1/image/category/${res.data.id}`,
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "multipart/form-data"
+              },
+              data: file
+            };
+            axios(authOptions2).then(() => {
+              this.refresh();
+              message.success("Успешно!");
+            });
+          });
       })
       .catch(err => {
         console.log(err);
+        message.error("Ошибка!");
       });
   };
 
@@ -181,15 +185,22 @@ export default class Categories extends React.Component {
         )
       },
       {
-        title: "Название",
+        title: "Название Ru",
         dataIndex: "categoryName",
         key: "categoryName"
+      },
+      {
+        title: "Название Kz",
+        dataIndex: "categoryNameKz",
+        key: "categoryNameKz"
       },
       {
         title: "Специализации по нему",
         dataIndex: "specializations",
         key: "specializations",
-        render: specializations => <span>{specializations.length}</span>
+        render: specializations => (
+          <span>{specializations ? specializations.length : 0}</span>
+        )
       },
       {
         title: "Создан",
@@ -209,8 +220,10 @@ export default class Categories extends React.Component {
             <a
               onClick={() => {
                 this.setState({
-                  name_update: record.categoryName,
+                  nameRu: record.categoryName,
+                  nameKz: record.categoryNameKz,
                   id: record.id,
+                  image_old: record.avatar,
                   visibleUpdate: true
                 });
               }}
@@ -221,8 +234,6 @@ export default class Categories extends React.Component {
         )
       }
     ];
-
-    console.log(this.state.categories);
 
     return (
       <Content style={{ padding: "0 24px", minHeight: 280 }}>
@@ -241,12 +252,21 @@ export default class Categories extends React.Component {
           <Form layout="vertical" hideRequiredMark>
             <Row gutter={16}>
               <Col span={24}>
-                <Form.Item label={`Название на ${this.state.language}`}>
+                <Form.Item label={`Название на KZ`}>
                   <Input
-                    value={this.state.name_update}
-                    onChange={e =>
-                      this.setState({ name_update: e.target.value })
-                    }
+                    value={this.state.nameKz}
+                    onChange={e => this.setState({ nameKz: e.target.value })}
+                    type="text"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item label={`Название на RU`}>
+                  <Input
+                    value={this.state.nameRu}
+                    onChange={e => this.setState({ nameRu: e.target.value })}
                     type="text"
                   />
                 </Form.Item>
@@ -342,12 +362,7 @@ export default class Categories extends React.Component {
             Добавить категорию
           </Button>
         </Button.Group>
-        <Row style={{margin: '20px 0px'}}>
-          <Select value={this.state.language} onSelect={this.onSelect}>
-            <Select.Option value="RU">Русский</Select.Option>
-            <Select.Option value="KK">Казахский</Select.Option>
-          </Select>
-        </Row>
+
         <Spin tip="Подождите..." spinning={this.state.spinning}>
           <Table columns={columns} dataSource={this.state.categories} />
         </Spin>

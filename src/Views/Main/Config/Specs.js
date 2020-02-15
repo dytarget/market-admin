@@ -36,7 +36,6 @@ export default class Specs extends React.Component {
     masterRu: "",
     id: "",
     visibleUpdate: false,
-    language: "KK",
     categoryId: ""
   };
 
@@ -48,8 +47,7 @@ export default class Specs extends React.Component {
     const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
     const headers = {
-      Authorization: `Bearer ${token}`,
-      "Accept-Language": this.state.language
+      Authorization: `Bearer ${token}`
     };
     axios
       .get(`${url}api/v1/spec`, {
@@ -79,35 +77,20 @@ export default class Specs extends React.Component {
       data: {
         categoryId: this.state.categoryId,
         masterName: this.state.masterRu,
-        name: this.state.nameRu
+        masterNameKz: this.state.masterKz,
+        specName: this.state.nameRu,
+        specNameKz: this.state.nameKz
       },
       headers: {
-        Authorization: `Bearer ${token}`,
-        "Accept-Language": "RU"
+        Authorization: `Bearer ${token}`
       },
       json: true
     };
 
     axios(authOptions)
       .then(res => {
-        const authOptions2 = {
-          method: "PATCH",
-          url: `${url}api/v1/admin/spec/${res.data.id}`,
-          data: {
-            categoryId: this.state.categoryId,
-            masterName: this.state.masterKz,
-            name: this.state.nameKz
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Accept-Language": "KK"
-          },
-          json: true
-        };
-        axios(authOptions2(res)).then(res => {
-          this.refresh();
-          message.success("Успешно!");
-        });
+        this.refresh();
+        message.success("Успешно!");
       })
       .catch(err => {
         console.log(err);
@@ -121,13 +104,14 @@ export default class Specs extends React.Component {
       method: "PATCH",
       url: `${url}api/v1/admin/spec/${this.state.id}`,
       data: {
-        // categoryId: this.state.categoryId_update,
-        masterName: this.state.masterName_update,
-        name: this.state.name_update
+        categoryId: this.state.categoryId,
+        masterName: this.state.masterRu,
+        masterNameKz: this.state.masterKz,
+        specName: this.state.nameRu,
+        specNameKz: this.state.nameKz
       },
       headers: {
-        Authorization: `Bearer ${token}`,
-        "Accept-Language": this.state.language
+        Authorization: `Bearer ${token}`
       },
       json: true
     };
@@ -145,10 +129,6 @@ export default class Specs extends React.Component {
       });
   };
 
-  onSelect = value => {
-    this.setState({ language: value }, () => this.refresh());
-  };
-
   render() {
     const columns = [
       {
@@ -157,14 +137,35 @@ export default class Specs extends React.Component {
         key: "id"
       },
       {
-        title: "Название",
+        title: "Название Ru",
         dataIndex: "specName",
         key: "specName"
       },
       {
-        title: "Название мастера(Множественный вид)",
+        title: "Название kz",
+        dataIndex: "specNameKz",
+        key: "specNameKz"
+      },
+      {
+        title: "Название мастера Ru",
         dataIndex: "masterName",
         key: "masterName"
+      },
+      {
+        title: "Название мастера Kz",
+        dataIndex: "masterNameKz",
+        key: "masterNameKz"
+      },
+      {
+        title: "Категория",
+        dataIndex: "categoryId",
+        key: "categoryId",
+        render: categoryId => {
+          const category = this.state.categories.find(
+            cat => cat.id === categoryId
+          );
+          return <span>{category.name}</span>;
+        }
       },
       {
         title: "Создан",
@@ -217,6 +218,7 @@ export default class Specs extends React.Component {
                 <Col span={24}>
                   <Select
                     onChange={categoryId => this.setState({ categoryId })}
+                    value={this.state.categoryId}
                   >
                     {this.state.categories.map(cat => (
                       <Select.Option value={cat.id}>
@@ -229,12 +231,19 @@ export default class Specs extends React.Component {
             </Form.Item>
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item label={`Название на ${this.state.language}`}>
+                <Form.Item label={`Название на Ru`}>
                   <Input
-                    value={this.state.name_update}
-                    onChange={e =>
-                      this.setState({ name_update: e.target.value })
-                    }
+                    value={this.state.nameRu}
+                    onChange={e => this.setState({ nameRu: e.target.value })}
+                    type="text"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label={`Название на Kz`}>
+                  <Input
+                    value={this.state.nameKz}
+                    onChange={e => this.setState({ nameKz: e.target.value })}
                     type="text"
                   />
                 </Form.Item>
@@ -242,12 +251,19 @@ export default class Specs extends React.Component {
             </Row>
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item label={`Название мастера на ${this.state.language}`}>
+                <Form.Item label={`Название мастера на Ru`}>
                   <Input
-                    value={this.state.masterName_update}
-                    onChange={e =>
-                      this.setState({ masterName_update: e.target.value })
-                    }
+                    value={this.state.masterRu}
+                    onChange={e => this.setState({ masterRu: e.target.value })}
+                    type="text"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label={`Название мастера на Kz`}>
+                  <Input
+                    value={this.state.masterKz}
+                    onChange={e => this.setState({ masterKz: e.target.value })}
                     type="text"
                   />
                 </Form.Item>
@@ -357,12 +373,7 @@ export default class Specs extends React.Component {
             Добавить специализацию
           </Button>
         </Button.Group>
-        <Row style={{ margin: "20px 0px" }}>
-          <Select value={this.state.language} onSelect={this.onSelect}>
-            <Select.Option value="RU">Русский</Select.Option>
-            <Select.Option value="KK">Казахский</Select.Option>
-          </Select>
-        </Row>
+       
         <Spin tip="Подождите..." spinning={this.state.spinning}>
           <Table columns={columns} dataSource={this.state.specs} />
         </Spin>
