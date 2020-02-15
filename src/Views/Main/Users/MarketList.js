@@ -61,27 +61,14 @@ const columns = [
     title: "Специализации",
     dataIndex: "category",
     key: "category",
-    render: category => <span>{category.categoryName}</span>
+    render: category => <span>{}</span>
   },
-  //   {
-  //     title: "Номер телефона",
-  //     dataIndex: "username",
-  //     key: "username",
-  //     render: username => {
-  //       const usernameMatch = username.match(/^(\d{3})(\d{3})(\d{2})(\d{2})$/);
-  //       const phoneNumber =
-  //         "(" +
-  //         usernameMatch[1] +
-  //         ") " +
-  //         usernameMatch[2] +
-  //         "-" +
-  //         usernameMatch[3] +
-  //         "-" +
-  //         usernameMatch[4];
-
-  //       return <span>8-{phoneNumber}</span>;
-  //     }
-  //   },
+    {
+      title: "Номер телефона",
+      dataIndex: "phone",
+      key: "phone",
+      
+    },
   {
     title: "Веб-сайт",
     dataIndex: "site",
@@ -123,11 +110,97 @@ export default class MarketTable extends React.Component {
       .then(res => {
         console.log(res.data);
 
-        this.setState({ spinning: false, markets: res.data.users });
+        this.setState({ spinning: false, markets: res.data.markets });
       })
       .catch(err => {
         console.log(err);
       });
+  };
+
+  createMarket = () => {
+    
+    const { about, 
+            address, 
+            breakSchedule, 
+            workdaysSchedule, 
+            saturdaySchedule,
+            sundaySchedule,
+            site,
+            status,
+            youtubeVideoLink,
+            email,
+            name,
+            phone,
+            productCategoriesIds
+
+          
+          } = this.state;
+    const obj = {
+      about, 
+      address, 
+      breakSchedule, 
+      workdaysSchedule, 
+      saturdaySchedule,
+      sundaySchedule,
+      site,
+      status,
+      youtubeVideoLink,
+      email,
+      name,
+      phone,
+      productCategoriesIds
+    };
+    const { token } = store.getState().userReducer;
+    const headers = {
+      Authorization: `Bearer ${token}`
+    };
+
+    axios
+      .post(
+        `${url}api/v1/admin/market`,
+        {
+          about: this.state.about,
+          address: this.state.address,
+          breakSchedule: this.state.breakSchedule, 
+          workdaysSchedule: this.state.workdaysSchedule, 
+          saturdaySchedule: this.state.saturdaySchedule,
+          sundaySchedule: this.state.sundaySchedule,
+          site: this.state.site,
+          status: this.state.status,
+          youtubeVideoLink: this.state.youtubeVideoLink,
+          email: this.state.email,
+          name: this.state.name,
+          phone: this.state.phone
+        },
+        {
+          headers
+        }
+      )
+      .then(res => {
+        console.log(res.data);
+        const file = new FormData();
+        file.append("file", this.state.image);
+
+        const authOptions = {
+          method: "POST",
+          url: `${url}api/v1/image/market/${res.data.id}`,
+          data: file,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/x-www-form-urlencoded"
+          }
+        };
+
+        axios(authOptions).then(res => {
+          this.refresh();
+          this.setState({ editModal: false });
+        });
+      })
+      .catch(err => {
+        console.log(err);
+      });
+
+    console.log(obj);
   };
 
   onChangeLogo = info => {
@@ -167,16 +240,21 @@ export default class MarketTable extends React.Component {
           okText="Создать"
           cancelText="Закрыть"
           closable={false}
-          onOk={() => this.setState({ editModal: false })}
+          onOk = {this.createMarket}
           onCancel={() => this.setState({ editModal: false })}
         >
           <Form>
             <Form.Item label="Название маркета">
               <Input onChange={e => this.setState({ name: e.target.value })} />
             </Form.Item>
-            <Form.Item label="Адерс">
+            <Form.Item label="Адрес">
               <Input
                 onChange={e => this.setState({ address: e.target.value })}
+              />
+            </Form.Item>
+            <Form.Item label="Телефон">
+              <Input
+                onChange={e => this.setState({ phone: e.target.value })}
               />
             </Form.Item>
             <Form.Item label="E-mail">
@@ -239,7 +317,7 @@ export default class MarketTable extends React.Component {
                   <Input
                     placeholder="12:00-13:00"
                     onChange={e =>
-                      this.setState({ sundaySchedule: e.target.value })
+                      this.setState({ breakSchedule: e.target.value })
                     }
                   />
                 </Form.Item>
