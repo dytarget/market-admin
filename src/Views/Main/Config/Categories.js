@@ -21,7 +21,7 @@ import {
 import axios from "axios";
 import { store } from "../../../store";
 
-const url = "https://cors-anywhere.herokuapp.com/http://91.201.214.201:8443/";
+const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 export default class Categories extends React.Component {
@@ -122,30 +122,25 @@ export default class Categories extends React.Component {
     this.setState({ spinning: true, editModal: false });
     axios(authOptions)
       .then(res => {
-        axios
-          .delete(`${url}api/v1/image/${this.state.image_old.id}`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          })
-          .then(res => {
-            const file = new FormData();
-            file.append("file", this.state.image_update);
+        const file = new FormData();
+        console.log(this.state.image_update);
 
-            const authOptions2 = {
-              method: "POST",
-              url: `${url}api/v1/image/category/${res.data.id}`,
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "multipart/form-data"
-              },
-              data: file
-            };
-            axios(authOptions2).then(() => {
-              this.refresh();
-              message.success("Успешно!");
-            });
-          });
+        file.append("file", this.state.image_update[0]);
+
+        const authOptions2 = {
+          method: "POST",
+          url: `${url}api/v1/image/category/${this.state.id}`,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data"
+          },
+          data: file
+        };
+        axios(authOptions2).then(() => {
+          this.refresh();
+          this.setState({});
+          message.success("Успешно!");
+        });
       })
       .catch(err => {
         console.log(err);

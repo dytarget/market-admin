@@ -20,7 +20,7 @@ import sendPushNotification from "../../../utils/sendPushNotification";
 
 const { Content } = Layout;
 
-const url = "https://cors-anywhere.herokuapp.com/http://91.201.214.201:8443/";
+const url = "http://91.201.214.201:8443/";
 
 export class ClientsProfile extends Component {
   constructor(props) {

@@ -17,7 +17,7 @@ const allStatus = [
   "CANCELLED"
 ];
 
-const url = "https://cors-anywhere.herokuapp.com/http://91.201.214.201:8443/";
+const url = "http://91.201.214.201:8443/";
 
 export class Orders extends Component {
   constructor(props) {
@@ -64,7 +64,7 @@ export class Orders extends Component {
   onKeyChange = ({ key }) => {
     console.log(key);
 
-    this.props.history.push("/orders");
+    this.props.history.push("/orders/orderlist");
 
     if (key === "1") {
       this.refresh(allStatus);
@@ -106,7 +106,7 @@ export class Orders extends Component {
             <Spin spinning={this.state.spinning} tip="Подождите...">
               <Switch>
                 <Route
-                  path="/orders"
+                  path="/orders/orderlist"
                   exact
                   component={() => (
                     <OrderTable
@@ -116,7 +116,7 @@ export class Orders extends Component {
                   )}
                 />
                 <Route
-                  path="/orders/:id"
+                  path="/orders/orderlist/:id"
                   exact
                   component={props => {
                     const order = this.state.orders.find(

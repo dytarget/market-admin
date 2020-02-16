@@ -18,7 +18,7 @@ const columns = [
     dataIndex: "description",
     key: "description",
     render: (text, data) => (
-      <Link to={`/orders/${data.id}`}>
+      <Link to={`/orders/orderlist/${data.id}`}>
         <span>{text.substring(0, 20)}</span>
       </Link>
     )

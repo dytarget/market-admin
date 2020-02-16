@@ -38,8 +38,7 @@ const getYear = value => {
 
 export default timestamp => {
   const date1 = new Date();
-    console.log("b", timestamp);
-
+  console.log("b", timestamp);
 
   var a = moment(date1);
   var b = moment([timestamp[0], timestamp[1] - 1, timestamp[2] + 1]);
@@ -55,9 +54,9 @@ export default timestamp => {
 
   var days = a.diff(b, "days");
 
-  let message = `${getYear(years)}${getMonth(months)}${getDay(
-    days
-  )}`;
+  let message = `${getYear(years)}${getMonth(months)}${getDay(days)}`;
+
+  console.log("MESSAGE", message);
 
   return message;
 };

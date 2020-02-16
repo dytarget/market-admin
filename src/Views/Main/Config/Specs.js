@@ -21,7 +21,7 @@ import {
 import axios from "axios";
 import { store } from "../../../store";
 
-const url = "https://cors-anywhere.herokuapp.com/http://91.201.214.201:8443/";
+const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 export default class Specs extends React.Component {
@@ -58,7 +58,7 @@ export default class Specs extends React.Component {
         axios
           .get(`${url}api/v1/category`, {
             headers
-          })
+          })  
           .then(res => {
             this.setState({ spinning: false, categories: res.data.categories });
           });
@@ -158,13 +158,10 @@ export default class Specs extends React.Component {
       },
       {
         title: "Категория",
-        dataIndex: "categoryId",
-        key: "categoryId",
-        render: categoryId => {
-          const category = this.state.categories.find(
-            cat => cat.id === categoryId
-          );
-          return <span>{category.name}</span>;
+        dataIndex: "category",
+        key: "category",
+        render: category => {
+          return <span>{category && category.categoryName}</span>;
         }
       },
       {
@@ -186,8 +183,11 @@ export default class Specs extends React.Component {
               onClick={() => {
                 this.setState({
                   visibleUpdate: true,
-                  name_update: record.specName,
-                  masterName_update: record.masterName,
+                  nameRu: record.specName,
+                  nameKz: record.specNameKz,
+                  masterRu: record.masterName,
+                  masterKz: record.masterNameKz,
+                  categoryId: record.category.id,
                   id: record.id
                 });
               }}
@@ -218,7 +218,7 @@ export default class Specs extends React.Component {
                 <Col span={24}>
                   <Select
                     onChange={categoryId => this.setState({ categoryId })}
-                    value={this.state.categoryId}
+                    defaultValue={this.state.categoryId}
                   >
                     {this.state.categories.map(cat => (
                       <Select.Option value={cat.id}>

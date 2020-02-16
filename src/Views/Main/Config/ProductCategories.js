@@ -21,7 +21,7 @@ import {
 import axios from "axios";
 import { store } from "../../../store";
 
-const url = "https://cors-anywhere.herokuapp.com/http://91.201.214.201:8443/";
+const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 export default class ProductCategories extends React.Component {
@@ -29,6 +29,7 @@ export default class ProductCategories extends React.Component {
     categories: [],
     spinning: false,
     editModal: false,
+    name: "",
     id: "",
     image: "",
     name_update: "",
@@ -45,15 +46,14 @@ export default class ProductCategories extends React.Component {
     const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
     const headers = {
-      Authorization: `Bearer ${token}`,
-      "Accept-Language": this.state.language
+      Authorization: `Bearer ${token}`
     };
     axios
-      .get(`${url}api/v1/category`, {
+      .get(`${url}api/v1/product-category`, {
         headers
       })
       .then(res => {
-        this.setState({ spinning: false, categories: res.data.categories });
+        this.setState({ spinning: false, categories: res.data.productCategories });
       })
       .catch(err => {
         console.log(err);
@@ -68,48 +68,30 @@ export default class ProductCategories extends React.Component {
     const { token } = store.getState().userReducer;
     const authOptions = {
       method: "POST",
-      url: `${url}api/v1/category`,
+      url: `${url}api/v1/admin/product-category?name=${this.state.name}`,
       headers: {
-        Authorization: `Bearer ${token}`,
-        "Accept-Language": "RU"
-      },
-      data: {
-        name: this.state.nameRu
+        Authorization: `Bearer ${token}`
       },
       json: true
     };
-    this.setState({ spinning: true });
+    this.setState({ spinning: true, editModal: false });
     axios(authOptions)
       .then(res => {
-        this.refresh();
-        const authOptionsKZ = {
-          method: "PATCH",
-          url: `${url}api/v1/category/${res.data.id}`,
+        const file = new FormData();
+        file.append("file", this.state.image);
+
+        const authOptions2 = {
+          method: "POST",
+          url: `${url}api/v1/image/product-category/${res.data.id}`,
           headers: {
             Authorization: `Bearer ${token}`,
-            "Accept-Language": "KK"
+            "Content-Type": "multipart/form-data"
           },
-          data: {
-            name: this.state.nameKz
-          },
-          json: true
+          data: file
         };
-        axios(authOptionsKZ).then(res => {
-          const file = new FormData();
-          file.append("file", this.state.image_update);
-          const authOptions2 = {
-            method: "POST",
-            url: `${url}api/v1/image/category/${res.data.id}`,
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/x-www-form-urlencoded"
-            },
-            data: file
-          };
-          axios(authOptions2).then(() => {
-            this.refresh();
-            message.success("Успешно!");
-          });
+        axios(authOptions2).then(() => {
+          this.refresh();
+          message.success("Успешно!");
         });
       })
       .catch(err => {
@@ -118,31 +100,47 @@ export default class ProductCategories extends React.Component {
       });
   };
 
-  onSelect = value => {
-    this.setState({ language: value }, () => this.refresh());
-  };
-
   handleUpdate = () => {
     const { token } = store.getState().userReducer;
-    const headers = {
-      Authorization: `Bearer ${token}`,
-      "Accept-Language": this.state.language
+    const authOptions = {
+      method: "PATCH",
+      url: `${url}api/v1/admin/product-category/${this.state.id}?name=${this.state.name}`,
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      json: true
     };
-    this.setState({ spinning: true });
-    axios
-      .patch(
-        `${url}api/v1/category/${this.state.id}`,
-        { name: this.state.name_update },
-        {
-          headers
-        }
-      )
+    this.setState({ spinning: true, editModal: false });
+    this.setState({visibleUpdate:false})
+    axios(authOptions)
       .then(res => {
-        this.setState({ visibleUpdate: false });
-        this.refresh();
+        if (this.state.image_update) {
+          const file = new FormData();
+          console.log(this.state.image_update);
+
+          file.append("file", this.state.image_update[0]);
+
+          const authOptions2 = {
+            method: "POST",
+            url: `${url}api/v1/image/product-category/${this.state.id}`,
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data"
+            },
+            data: file
+          };
+          axios(authOptions2).then(() => {
+            this.refresh();
+            message.success("Успешно!");
+          });
+        } else {
+          this.setState({visibleUpdate:false})
+          this.refresh();
+        }
       })
       .catch(err => {
         console.log(err);
+        message.error("Ошибка!");
       });
   };
 
@@ -163,14 +161,14 @@ export default class ProductCategories extends React.Component {
       },
       {
         title: "Фото",
-        dataIndex: "avatar",
-        key: "avatar",
-        render: avatar => (
+        dataIndex: "image",
+        key: "image",
+        render: image => (
           <img
             style={{ width: 80 }}
             src={
-              avatar
-                ? `http://91.201.214.201:8443/images/${avatar.imageName}`
+              image
+                ? `http://91.201.214.201:8443/images/${image.imageName}`
                 : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
             }
             alt=""
@@ -183,10 +181,10 @@ export default class ProductCategories extends React.Component {
         key: "categoryName"
       },
       {
-        title: "Специализации по нему",
-        dataIndex: "specializations",
-        key: "specializations",
-        render: specializations => <span>{specializations.length}</span>
+        title: "Маркетов по нему",
+        dataIndex: "markets",
+        key: "markets",
+        render: markets => <span>{markets ? markets.length : 0}</span>
       },
       {
         title: "Создан",
@@ -206,8 +204,9 @@ export default class ProductCategories extends React.Component {
             <a
               onClick={() => {
                 this.setState({
-                  name_update: record.categoryName,
+                  name: record.categoryName,
                   id: record.id,
+                  image_old: record.image,
                   visibleUpdate: true
                 });
               }}
@@ -219,13 +218,11 @@ export default class ProductCategories extends React.Component {
       }
     ];
 
-    console.log(this.state.categories);
-
     return (
       <Content style={{ padding: "0 24px", minHeight: 280 }}>
-        <h2 style={{ textAlign: "center" }}>Список категории</h2>
+        <h2 style={{ textAlign: "center" }}>Список категории продуктов</h2>
         <Drawer
-          title="Изменить категорию"
+          title="Изменить категорию продуктов"
           width={720}
           onClose={() =>
             this.setState({
@@ -238,12 +235,10 @@ export default class ProductCategories extends React.Component {
           <Form layout="vertical" hideRequiredMark>
             <Row gutter={16}>
               <Col span={24}>
-                <Form.Item label={`Название на ${this.state.language}`}>
+                <Form.Item label={`Название`}>
                   <Input
-                    value={this.state.name_update}
-                    onChange={e =>
-                      this.setState({ name_update: e.target.value })
-                    }
+                    value={this.state.name}
+                    onChange={e => this.setState({ name: e.target.value })}
                     type="text"
                   />
                 </Form.Item>
@@ -295,7 +290,7 @@ export default class ProductCategories extends React.Component {
           </div>
         </Drawer>
         <Modal
-          title="Создать категорию"
+          title="Создать категорию продуктов"
           visible={this.state.editModal}
           okText="Создать"
           cancelText="Закрыть"
@@ -304,16 +299,8 @@ export default class ProductCategories extends React.Component {
           onCancel={() => this.setState({ editModal: false })}
         >
           <Form>
-            <Form.Item label="Название на KZ">
-              <Input
-                onChange={e => this.setState({ nameKz: e.target.value })}
-              />
-            </Form.Item>
-
-            <Form.Item label="Название на RU">
-              <Input
-                onChange={e => this.setState({ nameRu: e.target.value })}
-              />
+            <Form.Item label="Названиe">
+              <Input onChange={e => this.setState({ name: e.target.value })} />
             </Form.Item>
 
             <Form.Item label="Фото">
@@ -336,15 +323,10 @@ export default class ProductCategories extends React.Component {
             type="primary"
           >
             <Icon type="plus" />
-            Добавить категорию
+            Добавить категорию продуктов
           </Button>
         </Button.Group>
-        <Row style={{margin: '20px 0px'}}>
-          <Select value={this.state.language} onSelect={this.onSelect}>
-            <Select.Option value="RU">Русский</Select.Option>
-            <Select.Option value="KK">Казахский</Select.Option>
-          </Select>
-        </Row>
+
         <Spin tip="Подождите..." spinning={this.state.spinning}>
           <Table columns={columns} dataSource={this.state.categories} />
         </Spin>

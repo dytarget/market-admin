@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, Icon, Skeleton, Avatar, Tooltip } from "antd";
 import Meta from "antd/lib/card/Meta";
 
-const url = "https://cors-anywhere.herokuapp.com/http://91.201.214.201:8443/";
+const url = "http://91.201.214.201:8443/";
 const sex = { M: "Мужской", F: "Женский" };
 
 export const UserComponent = ({ user }) => {

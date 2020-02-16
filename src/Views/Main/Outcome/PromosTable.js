@@ -23,7 +23,7 @@ import axios from "axios";
 import { store } from "../../../store";
 import TextArea from "antd/lib/input/TextArea";
 
-const url = "https://cors-anywhere.herokuapp.com/http://91.201.214.201:8443/";
+const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 const columns = [

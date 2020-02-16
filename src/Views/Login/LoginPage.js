@@ -4,7 +4,7 @@ import { connect } from "react-redux";
 import axios from "axios";
 import { userSetAction } from "../../actions/userAction";
 
-const url = "https://cors-anywhere.herokuapp.com/http://91.201.214.201:8443/";
+const url = "http://91.201.214.201:8443/";
 
 class LoginPage extends React.Component {
   handleSubmit = e => {

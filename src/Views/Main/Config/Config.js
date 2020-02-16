@@ -6,6 +6,7 @@ import Categories from "./Categories";
 import Specs from "./Specs";
 import Cities from "./Cities";
 import Price from "./Price";
+import ProductCategories from "./ProductCategories";
 
 const { Content, Sider } = Layout;
 
@@ -30,17 +31,20 @@ export class Config extends Component {
                 defaultSelectedKeys={["1"]}
                 style={{ height: "100%" }}
               >
-                <Menu.Item key="1">
+                <Menu.Item key="/config/categories">
                   <Link to="/config/categories">Категории</Link>
                 </Menu.Item>
-                <Menu.Item key="2">
+                <Menu.Item key="/config/specs">
                   <Link to="/config/specs">Специализации</Link>
                 </Menu.Item>
-                <Menu.Item key="3">
+                <Menu.Item key="/config/cities">
                   <Link to="/config/cities">Города</Link>
                 </Menu.Item>
-                <Menu.Item key="4">
+                <Menu.Item key="/config/price">
                   <Link to="/config/price">Цены</Link>
+                </Menu.Item>
+                <Menu.Item key="/config/product-categories">
+                  <Link to="/config/product-categories">Категории Продуктов</Link>
                 </Menu.Item>
               </Menu>
             </Sider>
@@ -49,6 +53,11 @@ export class Config extends Component {
               <Route path="/config/specs" exact component={Specs} />
               <Route path="/config/cities" exact component={Cities} />
               <Route path="/config/price" exact component={Price} />
+              <Route
+                path="/config/product-categories"
+                exact
+                component={ProductCategories}
+              />
             </Content>
           </Layout>
         </Content>

@@ -13,8 +13,8 @@ const { Header, Footer } = Layout;
 
 export class Main extends Component {
   componentDidMount() {
-    if (window.location.pathname === "/") {
-      this.props.history.push("/orders");
+    if (window.location.pathname === "/" || window.location.pathname === "/orders") {
+      this.props.history.push("/orders/orderlist");
     }
   }
   render() {
@@ -25,34 +25,39 @@ export class Main extends Component {
             <Menu
               theme="dark"
               mode="horizontal"
-              defaultSelectedKeys={["1"]}
+              defaultSelectedKeys={[
+                `${window.location.pathname.substring(
+                  0,
+                  window.location.pathname.lastIndexOf("/")
+                )}`
+              ]}
               style={{ lineHeight: "64px" }}
             >
-              <Menu.Item key="1">
-                <Link to="/orders">Заказы</Link>
+              <Menu.Item key="/orders">
+                <Link to="/orders/orderlist">Заказы</Link>
               </Menu.Item>
-              <Menu.Item key="2">
+              <Menu.Item key="/income">
                 <Link to="/income">Входящие</Link>
               </Menu.Item>
-              <Menu.Item key="3">
+              <Menu.Item key="/outcome">
                 <Link to="/outcome">Исходящие</Link>
               </Menu.Item>
-              <Menu.Item key="4">
+              <Menu.Item key="/users">
                 <Link to="/users">Пользователи</Link>
               </Menu.Item>
-              <Menu.Item key="5">
+              <Menu.Item key="/statistics">
                 <Link to="/statistics">Статистика</Link>
               </Menu.Item>
-              <Menu.Item key="6">
+              <Menu.Item key="/config">
                 <Link to="/config">Конфигураций</Link>
               </Menu.Item>
-              <Menu.Item key="7">
+              <Menu.Item key="/root">
                 <Link to="/root">Супер-Админ</Link>
               </Menu.Item>
             </Menu>
           </Header>
           <Switch>
-            <Route path="/orders" component={Orders} />
+            <Route path="/orders/orderlist" component={Orders} />
             <Route path="/users" component={Users} />
             <Route path="/income" component={Income} />
             <Route path="/outcome" component={Outcome} />

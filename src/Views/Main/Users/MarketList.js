@@ -12,14 +12,15 @@ import {
   Col,
   Row,
   Upload,
-  message
+  message,
+  Select
 } from "antd";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { store } from "../../../store";
 import TextArea from "antd/lib/input/TextArea";
 
-const url = "https://cors-anywhere.herokuapp.com/http://91.201.214.201:8443/";
+const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 const columns = [
@@ -58,17 +59,16 @@ const columns = [
     key: "address"
   },
   {
-    title: "Специализации",
+    title: "Категория",
     dataIndex: "category",
     key: "category",
-    render: category => <span>{}</span>
+    render: category => <span>{category && category.categoryName}</span>
   },
-    {
-      title: "Номер телефона",
-      dataIndex: "phone",
-      key: "phone",
-      
-    },
+  {
+    title: "Номер телефона",
+    dataIndex: "phone",
+    key: "phone"
+  },
   {
     title: "Веб-сайт",
     dataIndex: "site",
@@ -90,6 +90,8 @@ export default class MarketTable extends React.Component {
     spinning: false,
     editModal: false,
     files: [],
+    categories: [],
+    productCategories: [],
     logo: ""
   };
 
@@ -110,7 +112,24 @@ export default class MarketTable extends React.Component {
       .then(res => {
         console.log(res.data);
 
-        this.setState({ spinning: false, markets: res.data.markets });
+        this.setState({ markets: res.data.markets });
+        axios
+          .get(`${url}api/v1/category`, {
+            headers
+          })
+          .then(res => {
+            this.setState({ categories: res.data.categories });
+            axios
+              .get(`${url}api/v1/product-category`, {
+                headers
+              })
+              .then(res => {
+                this.setState({
+                  spinning: false,
+                  productCategories: res.data.productCategories
+                });
+              });
+          });
       })
       .catch(err => {
         console.log(err);
@@ -118,28 +137,11 @@ export default class MarketTable extends React.Component {
   };
 
   createMarket = () => {
-    
-    const { about, 
-            address, 
-            breakSchedule, 
-            workdaysSchedule, 
-            saturdaySchedule,
-            sundaySchedule,
-            site,
-            status,
-            youtubeVideoLink,
-            email,
-            name,
-            phone,
-            productCategoriesIds
-
-          
-          } = this.state;
-    const obj = {
-      about, 
-      address, 
-      breakSchedule, 
-      workdaysSchedule, 
+    const {
+      about,
+      address,
+      breakSchedule,
+      workdaysSchedule,
       saturdaySchedule,
       sundaySchedule,
       site,
@@ -148,7 +150,24 @@ export default class MarketTable extends React.Component {
       email,
       name,
       phone,
-      productCategoriesIds
+      productCategoriesIds,
+      categoryId
+    } = this.state;
+    const obj = {
+      about,
+      address,
+      breakSchedule,
+      workdaysSchedule,
+      saturdaySchedule,
+      sundaySchedule,
+      site,
+      status,
+      youtubeVideoLink,
+      email,
+      name,
+      phone,
+      productCategoriesIds,
+      categoryId
     };
     const { token } = store.getState().userReducer;
     const headers = {
@@ -161,8 +180,8 @@ export default class MarketTable extends React.Component {
         {
           about: this.state.about,
           address: this.state.address,
-          breakSchedule: this.state.breakSchedule, 
-          workdaysSchedule: this.state.workdaysSchedule, 
+          breakSchedule: this.state.breakSchedule,
+          workdaysSchedule: this.state.workdaysSchedule,
           saturdaySchedule: this.state.saturdaySchedule,
           sundaySchedule: this.state.sundaySchedule,
           site: this.state.site,
@@ -170,30 +189,47 @@ export default class MarketTable extends React.Component {
           youtubeVideoLink: this.state.youtubeVideoLink,
           email: this.state.email,
           name: this.state.name,
-          phone: this.state.phone
+          phone: this.state.phone,
+          productCategoriesIds: this.state.productCategoriesIds,
+          categoryId
         },
         {
           headers
         }
       )
-      .then(res => {
-        console.log(res.data);
+      .then(resmarket => {
         const file = new FormData();
-        file.append("file", this.state.image);
+        file.append("file", this.state.logo);
 
         const authOptions = {
           method: "POST",
-          url: `${url}api/v1/image/market/${res.data.id}`,
+          url: `${url}api/v1/image/market/${resmarket.data.id}`,
           data: file,
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": "multipart/form-data"
           }
         };
 
         axios(authOptions).then(res => {
-          this.refresh();
-          this.setState({ editModal: false });
+          const file = new FormData();
+          this.state.files.forEach(element => {
+            file.append("files", element);
+          });
+          const authOptionsPhotos = {
+            method: "POST",
+            url: `${url}api/v1/image/market/${resmarket.data.id}/photos`,
+            data: file,
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data"
+            }
+          };
+
+          axios(authOptionsPhotos).then(res => {
+            this.refresh();
+            this.setState({ editModal: false });
+          });
         });
       })
       .catch(err => {
@@ -240,7 +276,7 @@ export default class MarketTable extends React.Component {
           okText="Создать"
           cancelText="Закрыть"
           closable={false}
-          onOk = {this.createMarket}
+          onOk={this.createMarket}
           onCancel={() => this.setState({ editModal: false })}
         >
           <Form>
@@ -253,13 +289,48 @@ export default class MarketTable extends React.Component {
               />
             </Form.Item>
             <Form.Item label="Телефон">
-              <Input
-                onChange={e => this.setState({ phone: e.target.value })}
-              />
+              <Input onChange={e => this.setState({ phone: e.target.value })} />
             </Form.Item>
             <Form.Item label="E-mail">
               <Input onChange={e => this.setState({ email: e.target.value })} />
             </Form.Item>
+
+            <Form.Item label="Категория">
+              <Row gutter={16}>
+                <Col span={24}>
+                  <Select
+                    onChange={categoryId => this.setState({ categoryId })}
+                    defaultValue={this.state.categoryId}
+                  >
+                    {this.state.categories.map(cat => (
+                      <Select.Option value={cat.id}>
+                        {cat.categoryName}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Col>
+              </Row>
+            </Form.Item>
+
+            <Form.Item label="Продукты каких категории будет в маркете">
+              <Row gutter={16}>
+                <Col span={24}>
+                  <Select
+                    onChange={productCategoriesIds =>
+                      this.setState({ productCategoriesIds })
+                    }
+                    mode="multiple"
+                  >
+                    {this.state.productCategories.map(cat => (
+                      <Select.Option value={cat.id}>
+                        {cat.categoryName}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Col>
+              </Row>
+            </Form.Item>
+
             <Form.Item label="Веб-сайт">
               <Input onChange={e => this.setState({ site: e.target.value })} />
             </Form.Item>
@@ -276,7 +347,9 @@ export default class MarketTable extends React.Component {
               </span>
               <Input
                 placeholder={"Пример: https://youtu.be/5-4TgpDYPwg"}
-                onChange={e => this.setState({ site: e.target.value })}
+                onChange={e =>
+                  this.setState({ youtubeVideoLink: e.target.value })
+                }
               />
             </Form.Item>
             <Row gutter={16}>

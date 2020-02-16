@@ -7,6 +7,7 @@ import MastersTable from "./MastersTable";
 import MasterProfile from "./MasterProfile";
 import ClientsProfile from "./ClientsProfile";
 import MarketTable from "./MarketList";
+import MarketProfile from "./MarketProfile";
 
 const { Content, Sider } = Layout;
 
@@ -28,16 +29,16 @@ export class Users extends Component {
             <Sider width={200} style={{ background: "#fff" }}>
               <Menu
                 mode="inline"
-                defaultSelectedKeys={["1"]}
+                defaultSelectedKeys={[`${window.location.pathname}`]}
                 style={{ height: "100%" }}
               >
-                <Menu.Item key="1">
+                <Menu.Item key="/users/clients">
                   <Link to="/users/clients">Заказчики</Link>
                 </Menu.Item>
-                <Menu.Item key="2">
+                <Menu.Item key="/users/masters">
                   <Link to="/users/masters">Мастеры</Link>
                 </Menu.Item>
-                <Menu.Item key="3">
+                <Menu.Item key="/users/markets">
                   <Link to="/users/markets">Маркеты</Link>
                 </Menu.Item>
               </Menu>
@@ -56,6 +57,11 @@ export class Users extends Component {
                 component={MasterProfile}
               />
               <Route path="/users/markets" exact component={MarketTable} />
+              <Route
+                path="/users/markets/:id"
+                exact
+                component={MarketProfile}
+              />
             </Content>
           </Layout>
         </Content>
