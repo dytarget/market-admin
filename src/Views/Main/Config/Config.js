@@ -7,6 +7,7 @@ import Specs from "./Specs";
 import Cities from "./Cities";
 import Price from "./Price";
 import ProductCategories from "./ProductCategories";
+import AboutService from "./AboutService";
 
 const { Content, Sider } = Layout;
 
@@ -44,7 +45,14 @@ export class Config extends Component {
                   <Link to="/config/price">Цены</Link>
                 </Menu.Item>
                 <Menu.Item key="/config/product-categories">
-                  <Link to="/config/product-categories">Категории Продуктов</Link>
+                  <Link to="/config/product-categories">
+                    Категории Продуктов
+                  </Link>
+                </Menu.Item>
+                <Menu.Item key="/config/about-service">
+                  <Link to="/config/about-service">
+                    Откуда вы узнали о нашем сервисе
+                  </Link>
                 </Menu.Item>
               </Menu>
             </Sider>
@@ -57,6 +65,11 @@ export class Config extends Component {
                 path="/config/product-categories"
                 exact
                 component={ProductCategories}
+              />
+              <Route
+                path="/config/about-service"
+                exact
+                component={AboutService}
               />
             </Content>
           </Layout>

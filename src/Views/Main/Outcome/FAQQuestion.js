@@ -13,10 +13,11 @@ import {
   Col,
   Row,
   Upload,
+  Select,
   message,
   Drawer,
   Divider,
-  Popconfirm
+  Popconfirm,
 } from "antd";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -32,8 +33,7 @@ export default class FAQQuestion extends React.Component {
     spinning: false,
     editModal: false,
     visibleUpdate: false,
-    title: "",
-    text: ""
+    themes: [],
   };
 
   componentDidMount() {
@@ -45,21 +45,28 @@ export default class FAQQuestion extends React.Component {
     this.setState({ spinning: true });
     const headers = {
       Authorization: `Bearer ${token}`,
-      'Access-Control-Allow-Origin': '*',
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
     axios
       .get(`${url}api/v1/faq-category`, {
         headers,
-        mode: 'no-cors',
-        withCredentials: true,
       })
-      .then(res => {
+      .then((res) => {
+        let arr = [];
         console.log(res.data);
 
-        this.setState({ spinning: false, faqCats: res.data });
+        res.data.forEach((item) => {
+          const { faqs } = item;
+          faqs.map((faq) => {
+            faq.categoryName = item.name;
+            faq.categoryId = item.id;
+            return faq;
+          });
+          arr = arr.concat(faqs);
+        });
+        this.setState({ spinning: false, faqCats: arr, themes: res.data });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
@@ -68,24 +75,27 @@ export default class FAQQuestion extends React.Component {
     this.setState({ editModal: false });
     const { token } = store.getState().userReducer;
     const headers = {
-      Authorization: `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     };
 
     axios
       .post(
-        `${url}api/v1/admin/faq/category`,
+        `${url}api/v1/super/faq`,
         {
+          categoryId: this.state.categoryId,
           text: this.state.text,
-          title: this.state.title
+          textKz: this.state.textKz,
+          title: this.state.title,
+          titleKz: this.state.titleKz,
         },
         {
-          headers
+          headers,
         }
       )
-      .then(res => {
+      .then((res) => {
         this.refresh();
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
@@ -93,31 +103,34 @@ export default class FAQQuestion extends React.Component {
   updateFAQQuestion = () => {
     const { token } = store.getState().userReducer;
     const headers = {
-      Authorization: `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     };
 
     this.setState({ visibleUpdate: false });
 
     axios
-      .post(
-        `${url}api/v1/admin/faq/category/${this.state.id}`,
+      .patch(
+        `${url}api/v1/super/faq/${this.state.id}`,
         {
+          categoryId: this.state.categoryId,
           text: this.state.text,
-          title: this.state.title
+          textKz: this.state.textKz,
+          title: this.state.title,
+          titleKz: this.state.titleKz,
         },
         {
-          headers
+          headers,
         }
       )
-      .then(res => {
+      .then((res) => {
         this.refresh();
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
 
-  onChangeLogo = info => {
+  onChangeLogo = (info) => {
     this.setState({ image: info.file.originFileObj });
   };
 
@@ -126,35 +139,49 @@ export default class FAQQuestion extends React.Component {
       name: "file",
       action: "https://www.mocky.io/v2/5cc8019d300000980a055e76",
       headers: {
-        authorization: "authorization-text"
-      }
+        authorization: "authorization-text",
+      },
     };
     const columns = [
       {
         title: "ID",
         dataIndex: "id",
-        key: "id"
+        key: "id",
+      },
+      {
+        title: "Тема вопроса",
+        dataIndex: "categoryName",
+        key: "categoryName",
       },
       {
         title: "Заголовок ",
         dataIndex: "title",
-        key: "title"
+        key: "title",
       },
       {
         title: "Текст",
         dataIndex: "text",
         key: "text",
-        render: text => <TextArea value={text} rows={4} />
+      },
+      {
+        title: "Заголовок на казахском",
+        dataIndex: "titleKz",
+        key: "titleKz",
+      },
+      {
+        title: "Текст",
+        dataIndex: "textKz",
+        key: "textKz",
       },
       {
         title: "Создан",
         dataIndex: "created",
         key: "created",
-        render: created => (
+        render: (created) => (
           <span>
             {created[2]}/{created[1]}/{created[0]}
           </span>
-        )
+        ),
       },
       {
         title: "Действия",
@@ -167,7 +194,10 @@ export default class FAQQuestion extends React.Component {
                   visibleUpdate: true,
                   title: record.title,
                   text: record.text,
-                  id: record.id
+                  titleKz: record.titleKz,
+                  textKz: record.textKz,
+                  categoryId: record.categoryId,
+                  id: record.id,
                 });
               }}
             >
@@ -183,8 +213,8 @@ export default class FAQQuestion extends React.Component {
               <a>Удалить</a>
             </Popconfirm>
           </span>
-        )
-      }
+        ),
+      },
     ];
     return (
       <Content style={{ padding: "0 24px", minHeight: 280 }}>
@@ -194,7 +224,7 @@ export default class FAQQuestion extends React.Component {
           width={720}
           onClose={() =>
             this.setState({
-              visibleUpdate: false
+              visibleUpdate: false,
             })
           }
           onOk={this.updateFAQQuestion}
@@ -203,11 +233,45 @@ export default class FAQQuestion extends React.Component {
           <Form layout="vertical" hideRequiredMark>
             <Row gutter={16}>
               <Col span={24}>
+                <Form.Item label="Изменить тему вопроса">
+                  <Select
+                    value={this.state.categoryId}
+                    onChange={(e) => {
+                      this.setState({ categoryId: e });
+                    }}
+                    type="text"
+                  >
+                    {this.state.themes.map((theme) => {
+                      return (
+                        <Select.Option value={theme.id}>
+                          {theme.name}
+                        </Select.Option>
+                      );
+                    })}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={24}>
                 <Form.Item label="Изменить заголовок">
                   <Input
                     value={this.state.title}
-                    onChange={e => {
+                    onChange={(e) => {
                       this.setState({ title: e.target.value });
+                    }}
+                    type="text"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item label="Изменить заголовок Kz">
+                  <Input
+                    value={this.state.titleKz}
+                    onChange={(e) => {
+                      this.setState({ titleKz: e.target.value });
                     }}
                     type="text"
                   />
@@ -219,8 +283,21 @@ export default class FAQQuestion extends React.Component {
                 <Form.Item label="Изменить текст">
                   <TextArea
                     value={this.state.text}
-                    onChange={e => {
+                    onChange={(e) => {
                       this.setState({ text: e.target.value });
+                    }}
+                    type="text"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item label="Изменить текст Kz">
+                  <TextArea
+                    value={this.state.textKz}
+                    onChange={(e) => {
+                      this.setState({ textKz: e.target.value });
                     }}
                     type="text"
                   />
@@ -237,7 +314,7 @@ export default class FAQQuestion extends React.Component {
               borderTop: "1px solid #e9e9e9",
               padding: "10px 16px",
               background: "#fff",
-              textAlign: "right"
+              textAlign: "right",
             }}
           >
             <Button
@@ -252,7 +329,7 @@ export default class FAQQuestion extends React.Component {
           </div>
         </Drawer>
         <Modal
-          title="Создать новость"
+          title="Создать вопрос"
           visible={this.state.editModal}
           okText="Создать"
           cancelText="Закрыть"
@@ -261,12 +338,40 @@ export default class FAQQuestion extends React.Component {
           onCancel={() => this.setState({ editModal: false })}
         >
           <Form>
+            <Form.Item label="Тема вопроса">
+              <Select
+                onChange={(e) => {
+                  this.setState({ categoryId: e });
+                }}
+                type="text"
+              >
+                {this.state.themes.map((theme) => {
+                  return (
+                    <Select.Option value={theme.id}>{theme.name}</Select.Option>
+                  );
+                })}
+              </Select>
+            </Form.Item>
+
             <Form.Item label="Заголовок">
-              <Input onChange={e => this.setState({ title: e.target.value })} />
+              <Input
+                onChange={(e) => this.setState({ title: e.target.value })}
+              />
+            </Form.Item>
+            <Form.Item label="Заголовок Kz">
+              <Input
+                onChange={(e) => this.setState({ titleKz: e.target.value })}
+              />
             </Form.Item>
             <Form.Item label="Текст">
               <TextArea
-                onChange={e => this.setState({ text: e.target.value })}
+                onChange={(e) => this.setState({ text: e.target.value })}
+                rows={4}
+              />
+            </Form.Item>
+            <Form.Item label="Текст Kz">
+              <TextArea
+                onChange={(e) => this.setState({ textKz: e.target.value })}
                 rows={4}
               />
             </Form.Item>
@@ -286,7 +391,7 @@ export default class FAQQuestion extends React.Component {
           </Button>
         </Button.Group>
         <Spin tip="Подождите..." spinning={this.state.spinning}>
-          <Table columns={columns} dataSource={this.state.news} />
+          <Table columns={columns} dataSource={this.state.faqCats} />
         </Spin>
       </Content>
     );

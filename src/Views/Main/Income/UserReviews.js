@@ -11,31 +11,33 @@ const { Content } = Layout;
 const types = {
   QUESTION: "Вопрос",
   COMPLAINT: "Жалоба",
-  SUGGESTION: "Предложения"
+  SUGGESTION: "Предложения",
 };
 
 const columns = [
   {
     title: "ID",
     dataIndex: "id",
-    key: "id"
+    key: "id",
   },
   {
     title: "Кто отправил",
     dataIndex: "user",
     key: "user",
-    render: user => (
+    render: (user) => (
       <Link to={`/users/clients/${user.username}`}>
         {user.firstName} {user.lastName}
       </Link>
-    )
+    ),
   },
   {
     title: "Номер телефона",
     dataIndex: "user",
     key: "user",
-    render: user => {
-      const usernameMatch = user.username.match(/^(\d{3})(\d{3})(\d{2})(\d{2})$/);
+    render: (user) => {
+      const usernameMatch = user.username.match(
+        /^(\d{3})(\d{3})(\d{2})(\d{2})$/
+      );
       const phoneNumber =
         "(" +
         usernameMatch[1] +
@@ -47,32 +49,36 @@ const columns = [
         usernameMatch[4];
 
       return <span>8-{phoneNumber}</span>;
-    }
+    },
   },
   {
     title: "Тип обращения",
     dataIndex: "type",
     key: "type",
-    render: type => <span>{types[type]}</span>
+    render: (type) => <span>{types[type]}</span>,
   },
   {
     title: "Текст",
     dataIndex: "text",
     key: "text",
-    render: text => <TextArea value={text} rows={1} />
+    render: (text) => <TextArea value={text} rows={1} />,
   },
   {
     title: "Дата",
     dataIndex: "created",
     key: "created",
-    render: created  => <span>{created[2]}/{created[1]}/{created[0]}</span>
-  }
+    render: (created) => (
+      <span>
+        {created[2]}/{created[1]}/{created[0]}
+      </span>
+    ),
+  },
 ];
 
 export default class UserReview extends React.Component {
   state = {
     reviews: [],
-    spinning: false
+    spinning: false,
   };
 
   componentDidMount() {
@@ -82,18 +88,16 @@ export default class UserReview extends React.Component {
   refresh = () => {
     const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
+    const headers = {};
     axios
       .get(`${url}api/v1/support`, {
-        headers
+        headers,
       })
-      .then(res => {
+      .then((res) => {
         console.log(res.data);
         this.setState({ spinning: false, reviews: res.data.supportMessages });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };

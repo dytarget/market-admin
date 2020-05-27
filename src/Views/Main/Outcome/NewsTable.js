@@ -16,12 +16,13 @@ import {
   message,
   Drawer,
   Divider,
-  Popconfirm
+  Popconfirm,
 } from "antd";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { store } from "../../../store";
 import TextArea from "antd/lib/input/TextArea";
+import sendPushNotificationToAll from "../../../utils/sendPushNotificationToAll";
 
 const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
@@ -36,7 +37,8 @@ export default class NewsTable extends React.Component {
     title: "",
     text: "",
     image_old: "",
-    image_update: ""
+    image_update: "",
+    youtubeVideo: "",
   };
 
   componentDidMount() {
@@ -46,19 +48,15 @@ export default class NewsTable extends React.Component {
   refresh = () => {
     const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
+
     axios
-      .get(`${url}api/v1/news/all`, {
-        headers
-      })
-      .then(res => {
+      .get(`${url}api/v1/news/all`)
+      .then((res) => {
         console.log(res.data);
 
         this.setState({ spinning: false, news: res.data.news });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
@@ -68,26 +66,30 @@ export default class NewsTable extends React.Component {
     const obj = {
       image,
       text,
-      title
+      title,
     };
     const { token } = store.getState().userReducer;
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
+    const headers = {};
 
     axios
-      .post(
-        `${url}api/v1/news`,
-        {
-          header: this.state.title,
-          text: this.state.text
-        },
-        {
-          headers
-        }
-      )
-      .then(res => {
+      .post(`${url}api/v1/news`, {
+        header: this.state.title,
+        text: this.state.text,
+        headerKz: this.state.titleKz,
+        textKz: this.state.textKz,
+        youtubeVideo: this.state.youtubeVideo,
+      })
+      .then((res) => {
         console.log(res.data);
+        sendPushNotificationToAll(
+          ``,
+          `Новая запись в новостях`,
+          null,
+          "News",
+          0,
+          "client",
+          "bells"
+        );
         const file = new FormData();
         file.append("file", this.state.image);
 
@@ -96,17 +98,16 @@ export default class NewsTable extends React.Component {
           url: `${url}api/v1/image/news/${res.data.id}`,
           data: file,
           headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/x-www-form-urlencoded"
-          }
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
         };
 
-        axios(authOptions).then(res => {
+        axios(authOptions).then((res) => {
           this.refresh();
           this.setState({ editModal: false });
         });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
 
@@ -115,47 +116,51 @@ export default class NewsTable extends React.Component {
 
   updateNews = () => {
     const { token } = store.getState().userReducer;
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
+    const headers = {};
+
+    this.setState({ visibleUpdate: false, spinning: true });
 
     axios
-      .post(
-        `${url}api/v1/news`,
-        {
-          header: this.state.title,
-          text: this.state.text
-        },
-        {
-          headers
-        }
-      )
-      .then(res => {
-        console.log(res.data);
-        const file = new FormData();
-        file.append("file", this.state.image);
-
-        const authOptions = {
-          method: "POST",
-          url: `${url}api/v1/image/news/${res.data.id}`,
-          data: file,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/x-www-form-urlencoded"
-          }
-        };
-
-        axios(authOptions).then(res => {
-          this.refresh();
-          this.setState({ editModal: false });
-        });
+      .patch(`${url}api/v1/news/${this.state.id}`, {
+        header: this.state.title_update,
+        text: this.state.text_update,
+        headerKz: this.state.title_updateKz,
+        textKz: this.state.text_updateKz,
+        youtubeVideo: this.state.youtubeVideo,
       })
-      .catch(err => {
+      .then((res) => {
+        console.log(res.data);
+        if (this.state.image_update !== "") {
+          const file = new FormData();
+          file.append("file", this.state.image_update);
+
+          const authOptions = {
+            method: "POST",
+            url: `${url}api/v1/image/news/${this.state.id}`,
+            data: file,
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+          };
+
+          axios(authOptions).then((res) => {
+            this.refresh();
+            this.setState({ visibleUpdate: false });
+          });
+        } else {
+          this.refresh();
+        }
+      })
+      .catch((err) => {
         console.log(err);
       });
   };
 
-  onChangeLogo = info => {
+  onChangeLogo = (info) => {
+    this.setState({ image: info.file.originFileObj });
+  };
+
+  onChangeUpdate = (info) => {
     this.setState({ image: info.file.originFileObj });
   };
 
@@ -164,20 +169,20 @@ export default class NewsTable extends React.Component {
       name: "file",
       action: "https://www.mocky.io/v2/5cc8019d300000980a055e76",
       headers: {
-        authorization: "authorization-text"
-      }
+        authorization: "authorization-text",
+      },
     };
     const columns = [
       {
         title: "ID",
         dataIndex: "id",
-        key: "id"
+        key: "id",
       },
       {
         title: "Фото",
         dataIndex: "image",
         key: "image",
-        render: image => (
+        render: (image) => (
           <img
             style={{ width: 70 }}
             src={
@@ -187,23 +192,47 @@ export default class NewsTable extends React.Component {
             }
             alt=""
           />
-        )
+        ),
+      },
+      {
+        title: "Заголовок",
+        dataIndex: "header",
+        key: "header",
+      },
+      {
+        title: "Заголовок Kz",
+        dataIndex: "headerKz",
+        key: "headerKz",
       },
       {
         title: "Текст",
         dataIndex: "text",
         key: "text",
-        render: text => <TextArea value={text} rows={4} />
+        render: (text) => <TextArea value={text} rows={4} />,
+      },
+      {
+        title: "Текст Kz",
+        dataIndex: "textKz",
+        key: "textKz",
+        render: (textKz) => <TextArea value={textKz} rows={4} />,
+      },
+      {
+        title: "Youtube Video",
+        dataIndex: "youtubeVideo",
+        key: "youtubeVideo",
+        render: (youtubeVideo) => (
+          <Link onClick={() => window.open(youtubeVideo)}>{youtubeVideo}</Link>
+        ),
       },
       {
         title: "Создан",
         dataIndex: "created",
         key: "created",
-        render: created => (
+        render: (created) => (
           <span>
             {created[2]}/{created[1]}/{created[0]}
           </span>
-        )
+        ),
       },
       {
         title: "Действия",
@@ -216,8 +245,11 @@ export default class NewsTable extends React.Component {
                   visibleUpdate: true,
                   title_update: record.header,
                   text_update: record.text,
+                  title_updateKz: record.headerKz,
+                  text_updateKz: record.textKz,
                   image_old: record.image,
-                  id: record.id
+                  youtubeVideo: record.youtubeVideo,
+                  id: record.id,
                 });
               }}
             >
@@ -233,8 +265,8 @@ export default class NewsTable extends React.Component {
               <a>Удалить</a>
             </Popconfirm>
           </span>
-        )
-      }
+        ),
+      },
     ];
     return (
       <Content style={{ padding: "0 24px", minHeight: 280 }}>
@@ -244,7 +276,7 @@ export default class NewsTable extends React.Component {
           width={720}
           onClose={() =>
             this.setState({
-              visibleUpdate: false
+              visibleUpdate: false,
             })
           }
           onOk={this.updateNews}
@@ -256,7 +288,7 @@ export default class NewsTable extends React.Component {
                 <Form.Item label="Изменить Заголовок">
                   <Input
                     value={this.state.title_update}
-                    onChange={e => {
+                    onChange={(e) => {
                       this.setState({ title_update: e.target.value });
                     }}
                     type="text"
@@ -270,7 +302,7 @@ export default class NewsTable extends React.Component {
                   <Input.TextArea
                     rows={12}
                     value={this.state.text_update}
-                    onChange={e => {
+                    onChange={(e) => {
                       this.setState({ text_update: e.target.value });
                     }}
                   />
@@ -279,20 +311,49 @@ export default class NewsTable extends React.Component {
             </Row>
             <Row gutter={16}>
               <Col span={24}>
-                <Form.Item label="Прикрепить Новую фотографию">
-                  <img
-                    style={{ width: 70 }}
-                    src={
-                      this.state.image_update
-                        ? `http://91.201.214.201:8443/images/${this.state.image_update.imageName}`
-                        : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
-                    }
-                    alt=""
+                <Form.Item label="Изменить Заголовок Kz">
+                  <Input
+                    value={this.state.title_updateKz}
+                    onChange={(e) => {
+                      this.setState({ title_updateKz: e.target.value });
+                    }}
+                    type="text"
                   />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item label="Изменить Текст Kz">
+                  <Input.TextArea
+                    rows={12}
+                    value={this.state.text_updateKz}
+                    onChange={(e) => {
+                      this.setState({ text_updateKz: e.target.value });
+                    }}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item label="Изменить ссылку Youtube Видео (Пример: https://youtu.be/5-4TgpDYPwg)">
+                  <Input
+                    value={this.state.youtubeVideo}
+                    onChange={(e) => {
+                      this.setState({ youtubeVideo: e.target.value });
+                    }}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item label="Прикрепить Новую фотографию">
                   <input
                     type="file"
-                    onChange={e => {
-                      this.setState({ image_update: e.target.files });
+                    onChange={(e) => {
+                      this.setState({ image_update: e.target.files[0] });
                     }}
                   />
                 </Form.Item>
@@ -308,7 +369,7 @@ export default class NewsTable extends React.Component {
               borderTop: "1px solid #e9e9e9",
               padding: "10px 16px",
               background: "#fff",
-              textAlign: "right"
+              textAlign: "right",
             }}
           >
             <Button
@@ -317,7 +378,7 @@ export default class NewsTable extends React.Component {
             >
               Отменить
             </Button>
-            <Button onClick={this.handleUpdate} type="primary">
+            <Button onClick={this.updateNews} type="primary">
               Изменить
             </Button>
           </div>
@@ -333,12 +394,32 @@ export default class NewsTable extends React.Component {
         >
           <Form>
             <Form.Item label="Заголовок">
-              <Input onChange={e => this.setState({ title: e.target.value })} />
+              <Input
+                onChange={(e) => this.setState({ title: e.target.value })}
+              />
             </Form.Item>
             <Form.Item label="Текст">
               <TextArea
                 rows={5}
-                onChange={e => this.setState({ text: e.target.value })}
+                onChange={(e) => this.setState({ text: e.target.value })}
+              />
+            </Form.Item>
+            <Form.Item label="Заголовок Kz">
+              <Input
+                onChange={(e) => this.setState({ titleKz: e.target.value })}
+              />
+            </Form.Item>
+            <Form.Item label="Текст Kz">
+              <TextArea
+                rows={5}
+                onChange={(e) => this.setState({ textKz: e.target.value })}
+              />
+            </Form.Item>
+            <Form.Item label="Ссылка на Youtube видео (Пример: https://youtu.be/5-4TgpDYPwg)">
+              <Input
+                onChange={(e) =>
+                  this.setState({ youtubeVideo: e.target.value })
+                }
               />
             </Form.Item>
             <Form.Item label="Фото">

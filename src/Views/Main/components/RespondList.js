@@ -3,13 +3,11 @@ import { List, Avatar } from "antd";
 import { Link } from "react-router-dom";
 
 export const RespondList = ({ responds, master = false }) => {
-  console.log(responds[0] && responds[0].order);
-
   return (
     <div>
       <List
         itemLayout="horizontal"
-        dataSource={responds}
+        dataSource={Array.isArray(responds) ? responds.reverse() : []}
         renderItem={item => (
           <List.Item>
             <List.Item.Meta
@@ -40,7 +38,7 @@ export const RespondList = ({ responds, master = false }) => {
                             {item.order ? (
                               <span>
                                 на заказ{" "}
-                                <Link to={`/orders/${item.order.id}`}>
+                                <Link to={`/orders/orderlist/${item.order.id}`}>
                                   {item.order.id}
                                 </Link>
                                 {": "}

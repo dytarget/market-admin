@@ -16,7 +16,7 @@ import {
   Drawer,
   Divider,
   Popconfirm,
-  Select
+  Select,
 } from "antd";
 import axios from "axios";
 import { store } from "../../../store";
@@ -35,7 +35,7 @@ export default class ProductCategories extends React.Component {
     name_update: "",
     image_old: "",
     image_update: "",
-    visibleUpdate: false
+    visibleUpdate: false,
   };
 
   componentDidMount() {
@@ -45,22 +45,23 @@ export default class ProductCategories extends React.Component {
   refresh = () => {
     const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
+    const headers = {};
     axios
       .get(`${url}api/v1/product-category`, {
-        headers
+        headers,
       })
-      .then(res => {
-        this.setState({ spinning: false, categories: res.data.productCategories });
+      .then((res) => {
+        this.setState({
+          spinning: false,
+          categories: res.data.productCategories,
+        });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
 
-  onChangeLogo = info => {
+  onChangeLogo = (info) => {
     this.setState({ image: info.file.originFileObj });
   };
 
@@ -68,15 +69,13 @@ export default class ProductCategories extends React.Component {
     const { token } = store.getState().userReducer;
     const authOptions = {
       method: "POST",
-      url: `${url}api/v1/admin/product-category?name=${this.state.name}`,
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
-      json: true
+      url: `${url}api/v1/super/product-category?name=${this.state.name}`,
+      headers: {},
+      json: true,
     };
     this.setState({ spinning: true, editModal: false });
     axios(authOptions)
-      .then(res => {
+      .then((res) => {
         const file = new FormData();
         file.append("file", this.state.image);
 
@@ -84,17 +83,16 @@ export default class ProductCategories extends React.Component {
           method: "POST",
           url: `${url}api/v1/image/product-category/${res.data.id}`,
           headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data"
+            "Content-Type": "multipart/form-data",
           },
-          data: file
+          data: file,
         };
         axios(authOptions2).then(() => {
           this.refresh();
           message.success("Успешно!");
         });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
         message.error("Ошибка!");
       });
@@ -104,16 +102,14 @@ export default class ProductCategories extends React.Component {
     const { token } = store.getState().userReducer;
     const authOptions = {
       method: "PATCH",
-      url: `${url}api/v1/admin/product-category/${this.state.id}?name=${this.state.name}`,
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
-      json: true
+      url: `${url}api/v1/super/product-category/${this.state.id}?name=${this.state.name}`,
+      headers: {},
+      json: true,
     };
     this.setState({ spinning: true, editModal: false });
-    this.setState({visibleUpdate:false})
+    this.setState({ visibleUpdate: false });
     axios(authOptions)
-      .then(res => {
+      .then((res) => {
         if (this.state.image_update) {
           const file = new FormData();
           console.log(this.state.image_update);
@@ -124,23 +120,39 @@ export default class ProductCategories extends React.Component {
             method: "POST",
             url: `${url}api/v1/image/product-category/${this.state.id}`,
             headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data"
+              "Content-Type": "multipart/form-data",
             },
-            data: file
+            data: file,
           };
           axios(authOptions2).then(() => {
             this.refresh();
             message.success("Успешно!");
           });
         } else {
-          this.setState({visibleUpdate:false})
+          this.setState({ visibleUpdate: false });
           this.refresh();
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
         message.error("Ошибка!");
+      });
+  };
+
+  deleteCategory = (id) => {
+    const { token } = store.getState().userReducer;
+    this.setState({ spinning: true });
+    const authOptions = {
+      method: "DELETE",
+      url: `${url}api/v1/super/product-category/${id}`,
+      headers: {},
+    };
+
+    axios(authOptions)
+      .then(() => this.refresh())
+      .catch(() => {
+        message.error("Вы не можете удалить, есть продукты в этой категории");
+        this.setState({ spinning: false });
       });
   };
 
@@ -149,21 +161,21 @@ export default class ProductCategories extends React.Component {
       name: "file",
       action: "https://www.mocky.io/v2/5cc8019d300000980a055e76",
       headers: {
-        authorization: "authorization-text"
-      }
+        authorization: "authorization-text",
+      },
     };
 
     const columns = [
       {
         title: "ID",
         dataIndex: "id",
-        key: "id"
+        key: "id",
       },
       {
         title: "Фото",
         dataIndex: "image",
         key: "image",
-        render: image => (
+        render: (image) => (
           <img
             style={{ width: 80 }}
             src={
@@ -173,28 +185,22 @@ export default class ProductCategories extends React.Component {
             }
             alt=""
           />
-        )
+        ),
       },
       {
         title: "Название",
         dataIndex: "categoryName",
-        key: "categoryName"
-      },
-      {
-        title: "Маркетов по нему",
-        dataIndex: "markets",
-        key: "markets",
-        render: markets => <span>{markets ? markets.length : 0}</span>
+        key: "categoryName",
       },
       {
         title: "Создан",
         dataIndex: "created",
         key: "created",
-        render: created => (
+        render: (created) => (
           <span>
             {created[2]}/{created[1]}/{created[0]}
           </span>
-        )
+        ),
       },
       {
         title: "Действия",
@@ -207,15 +213,25 @@ export default class ProductCategories extends React.Component {
                   name: record.categoryName,
                   id: record.id,
                   image_old: record.image,
-                  visibleUpdate: true
+                  visibleUpdate: true,
                 });
               }}
             >
               Изменить
-            </a>
+            </a>{" "}
+            |{" "}
+            <Popconfirm
+              placement="top"
+              onConfirm={() => this.deleteCategory(record.id)}
+              title={"Удалить ?"}
+              okText="Yes"
+              cancelText="No"
+            >
+              <a>Удалить</a>
+            </Popconfirm>
           </span>
-        )
-      }
+        ),
+      },
     ];
 
     return (
@@ -226,7 +242,7 @@ export default class ProductCategories extends React.Component {
           width={720}
           onClose={() =>
             this.setState({
-              visibleUpdate: false
+              visibleUpdate: false,
             })
           }
           onOk={this.handleUpdate}
@@ -238,7 +254,7 @@ export default class ProductCategories extends React.Component {
                 <Form.Item label={`Название`}>
                   <Input
                     value={this.state.name}
-                    onChange={e => this.setState({ name: e.target.value })}
+                    onChange={(e) => this.setState({ name: e.target.value })}
                     type="text"
                   />
                 </Form.Item>
@@ -258,8 +274,10 @@ export default class ProductCategories extends React.Component {
                   />
                   <input
                     type="file"
-                    onChange={e => {
-                      this.setState({ image_update: e.target.files });
+                    onChange={(e) => {
+                      this.setState({
+                        image_update: e.target.files,
+                      });
                     }}
                   />
                 </Form.Item>
@@ -275,7 +293,7 @@ export default class ProductCategories extends React.Component {
               borderTop: "1px solid #e9e9e9",
               padding: "10px 16px",
               background: "#fff",
-              textAlign: "right"
+              textAlign: "right",
             }}
           >
             <Button
@@ -300,7 +318,9 @@ export default class ProductCategories extends React.Component {
         >
           <Form>
             <Form.Item label="Названиe">
-              <Input onChange={e => this.setState({ name: e.target.value })} />
+              <Input
+                onChange={(e) => this.setState({ name: e.target.value })}
+              />
             </Form.Item>
 
             <Form.Item label="Фото">

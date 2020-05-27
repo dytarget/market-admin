@@ -12,12 +12,14 @@ export const PromosList = ({ promos }) => {
           <List.Item>
             <List.Item.Meta
               avatar={
-                <Avatar
-                  size="large"
+                <img
+                  width={300}
+                  height={180}
+                  alt="promo"
                   src={
                     item.image
                       ? `http://91.201.214.201:8443/images/${item.image.imageName}`
-                      : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
+                      : "https://sanitationsolutions.net/wp-content/uploads/2015/05/empty-image.png"
                   }
                 />
               }

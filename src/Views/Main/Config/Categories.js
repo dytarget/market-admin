@@ -16,7 +16,7 @@ import {
   Drawer,
   Divider,
   Popconfirm,
-  Select
+  Select,
 } from "antd";
 import axios from "axios";
 import { store } from "../../../store";
@@ -31,12 +31,13 @@ export default class Categories extends React.Component {
     editModal: false,
     nameKz: "",
     nameRu: "",
+    priority: "",
     id: "",
     image: "",
     name_update: "",
     image_old: "",
     image_update: "",
-    visibleUpdate: false
+    visibleUpdate: false,
   };
 
   componentDidMount() {
@@ -46,22 +47,20 @@ export default class Categories extends React.Component {
   refresh = () => {
     const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
+    const headers = {};
     axios
       .get(`${url}api/v1/category`, {
-        headers
+        headers,
       })
-      .then(res => {
+      .then((res) => {
         this.setState({ spinning: false, categories: res.data.categories });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
 
-  onChangeLogo = info => {
+  onChangeLogo = (info) => {
     this.setState({ image: info.file.originFileObj });
   };
 
@@ -70,18 +69,17 @@ export default class Categories extends React.Component {
     const authOptions = {
       method: "POST",
       url: `${url}api/v1/category`,
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
+      headers: {},
       data: {
         categoryName: this.state.nameRu,
-        categoryNameKz: this.state.nameKz
+        categoryNameKz: this.state.nameKz,
+        priority: this.state.priority,
       },
-      json: true
+      json: true,
     };
     this.setState({ spinning: true, editModal: false });
     axios(authOptions)
-      .then(res => {
+      .then((res) => {
         const file = new FormData();
         file.append("file", this.state.image);
 
@@ -89,17 +87,16 @@ export default class Categories extends React.Component {
           method: "POST",
           url: `${url}api/v1/image/category/${res.data.id}`,
           headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data"
+            "Content-Type": "multipart/form-data",
           },
-          data: file
+          data: file,
         };
         axios(authOptions2).then(() => {
           this.refresh();
           message.success("Успешно!");
         });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
         message.error("Ошибка!");
       });
@@ -110,18 +107,17 @@ export default class Categories extends React.Component {
     const authOptions = {
       method: "PATCH",
       url: `${url}api/v1/category/${this.state.id}`,
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
+      headers: {},
       data: {
         categoryName: this.state.nameRu,
-        categoryNameKz: this.state.nameKz
+        categoryNameKz: this.state.nameKz,
+        priority: this.state.priority,
       },
-      json: true
+      json: true,
     };
     this.setState({ spinning: true, editModal: false });
     axios(authOptions)
-      .then(res => {
+      .then((res) => {
         const file = new FormData();
         console.log(this.state.image_update);
 
@@ -131,10 +127,9 @@ export default class Categories extends React.Component {
           method: "POST",
           url: `${url}api/v1/image/category/${this.state.id}`,
           headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data"
+            "Content-Type": "multipart/form-data",
           },
-          data: file
+          data: file,
         };
         axios(authOptions2).then(() => {
           this.refresh();
@@ -142,9 +137,28 @@ export default class Categories extends React.Component {
           message.success("Успешно!");
         });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
         message.error("Ошибка!");
+      });
+  };
+
+  deleteCategory = (id) => {
+    const { token } = store.getState().userReducer;
+    this.setState({ spinning: true });
+    const authOptions = {
+      method: "DELETE",
+      url: `${url}api/v1/super/category/${id}`,
+      headers: {},
+    };
+
+    axios(authOptions)
+      .then(() => this.refresh())
+      .catch(() => {
+        message.error(
+          "Вы не можете удалить, есть специализации в этой категории"
+        );
+        this.setState({ spinning: false });
       });
   };
 
@@ -153,21 +167,21 @@ export default class Categories extends React.Component {
       name: "file",
       action: "https://www.mocky.io/v2/5cc8019d300000980a055e76",
       headers: {
-        authorization: "authorization-text"
-      }
+        authorization: "authorization-text",
+      },
     };
 
     const columns = [
       {
         title: "ID",
         dataIndex: "id",
-        key: "id"
+        key: "id",
       },
       {
         title: "Фото",
         dataIndex: "avatar",
         key: "avatar",
-        render: avatar => (
+        render: (avatar) => (
           <img
             style={{ width: 80 }}
             src={
@@ -177,35 +191,40 @@ export default class Categories extends React.Component {
             }
             alt=""
           />
-        )
+        ),
       },
       {
         title: "Название Ru",
         dataIndex: "categoryName",
-        key: "categoryName"
+        key: "categoryName",
       },
       {
         title: "Название Kz",
         dataIndex: "categoryNameKz",
-        key: "categoryNameKz"
+        key: "categoryNameKz",
       },
       {
         title: "Специализации по нему",
         dataIndex: "specializations",
         key: "specializations",
-        render: specializations => (
+        render: (specializations) => (
           <span>{specializations ? specializations.length : 0}</span>
-        )
+        ),
+      },
+      {
+        title: "Приоритет",
+        dataIndex: "priority",
+        key: "priority",
       },
       {
         title: "Создан",
         dataIndex: "created",
         key: "created",
-        render: created => (
+        render: (created) => (
           <span>
             {created[2]}/{created[1]}/{created[0]}
           </span>
-        )
+        ),
       },
       {
         title: "Действия",
@@ -218,16 +237,27 @@ export default class Categories extends React.Component {
                   nameRu: record.categoryName,
                   nameKz: record.categoryNameKz,
                   id: record.id,
+                  priority: record.priority,
                   image_old: record.avatar,
-                  visibleUpdate: true
+                  visibleUpdate: true,
                 });
               }}
             >
               Изменить
-            </a>
+            </a>{" "}
+            |{" "}
+            <Popconfirm
+              placement="top"
+              onConfirm={() => this.deleteCategory(record.id)}
+              title={"Удалить ?"}
+              okText="Yes"
+              cancelText="No"
+            >
+              <a>Удалить</a>
+            </Popconfirm>
           </span>
-        )
-      }
+        ),
+      },
     ];
 
     return (
@@ -238,7 +268,7 @@ export default class Categories extends React.Component {
           width={720}
           onClose={() =>
             this.setState({
-              visibleUpdate: false
+              visibleUpdate: false,
             })
           }
           onOk={this.handleUpdate}
@@ -250,7 +280,7 @@ export default class Categories extends React.Component {
                 <Form.Item label={`Название на KZ`}>
                   <Input
                     value={this.state.nameKz}
-                    onChange={e => this.setState({ nameKz: e.target.value })}
+                    onChange={(e) => this.setState({ nameKz: e.target.value })}
                     type="text"
                   />
                 </Form.Item>
@@ -261,12 +291,19 @@ export default class Categories extends React.Component {
                 <Form.Item label={`Название на RU`}>
                   <Input
                     value={this.state.nameRu}
-                    onChange={e => this.setState({ nameRu: e.target.value })}
+                    onChange={(e) => this.setState({ nameRu: e.target.value })}
                     type="text"
                   />
                 </Form.Item>
               </Col>
             </Row>
+            <Form.Item label={`Приоритет`}>
+              <Input
+                value={this.state.priority}
+                onChange={(e) => this.setState({ priority: e.target.value })}
+                type="numeric"
+              />
+            </Form.Item>
             <Row gutter={16}>
               <Col span={24}>
                 <Form.Item label="Прикрепить Новую фотографию">
@@ -281,7 +318,7 @@ export default class Categories extends React.Component {
                   />
                   <input
                     type="file"
-                    onChange={e => {
+                    onChange={(e) => {
                       this.setState({ image_update: e.target.files });
                     }}
                   />
@@ -298,7 +335,7 @@ export default class Categories extends React.Component {
               borderTop: "1px solid #e9e9e9",
               padding: "10px 16px",
               background: "#fff",
-              textAlign: "right"
+              textAlign: "right",
             }}
           >
             <Button
@@ -324,13 +361,20 @@ export default class Categories extends React.Component {
           <Form>
             <Form.Item label="Название на KZ">
               <Input
-                onChange={e => this.setState({ nameKz: e.target.value })}
+                onChange={(e) => this.setState({ nameKz: e.target.value })}
               />
             </Form.Item>
 
             <Form.Item label="Название на RU">
               <Input
-                onChange={e => this.setState({ nameRu: e.target.value })}
+                onChange={(e) => this.setState({ nameRu: e.target.value })}
+              />
+            </Form.Item>
+
+            <Form.Item label="Приоритет">
+              <Input
+                onChange={(e) => this.setState({ priority: e.target.value })}
+                type="numeric"
               />
             </Form.Item>
 

@@ -9,7 +9,7 @@ const { Content, Sider } = Layout;
 export class Income extends Component {
   componentDidMount() {
     if (window.location.pathname === "/income") {
-      this.props.history.push("/income/promos");
+      this.props.history.push("/income/messages");
     }
   }
 
@@ -28,12 +28,12 @@ export class Income extends Component {
                 style={{ height: "100%" }}
               >
                 <Menu.Item key="1">
-                  <Link to="/incom/promos">Обращения</Link>
+                  <Link to="/income/messages">Обращения</Link>
                 </Menu.Item>
               </Menu>
             </Sider>
             <Content style={{ padding: "0 24px", minHeight: 280 }}>
-              <Route path="/income/promos" exact component={UserReview} />
+              <Route path="/income/messages" exact component={UserReview} />
             </Content>
           </Layout>
         </Content>

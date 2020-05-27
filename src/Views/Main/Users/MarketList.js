@@ -13,12 +13,13 @@ import {
   Row,
   Upload,
   message,
-  Select
+  Select,
 } from "antd";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { store } from "../../../store";
 import TextArea from "antd/lib/input/TextArea";
+import moment from "moment";
 
 const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
@@ -27,13 +28,13 @@ const columns = [
   {
     title: "ID",
     dataIndex: "id",
-    key: "id"
+    key: "id",
   },
   {
     title: "Логотип",
     dataIndex: "logo",
     key: "logo",
-    render: logo => (
+    render: (logo) => (
       <Avatar
         src={
           logo
@@ -41,7 +42,7 @@ const columns = [
             : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
         }
       />
-    )
+    ),
   },
   {
     title: "Название",
@@ -51,37 +52,105 @@ const columns = [
       <Link to={`/users/markets/${data.id}`}>
         <span>{marketName}</span>
       </Link>
-    )
+    ),
+  },
+  {
+    title: "Дата регистрации",
+    dataIndex: "created",
+    key: "created",
+    render: (created) => (
+      <span>{`${created[2]}/${created[1]}/${created[0]}`}</span>
+    ),
   },
   {
     title: "Адрес",
     dataIndex: "address",
-    key: "address"
+    key: "address",
+    width: 200,
   },
   {
-    title: "Категория",
-    dataIndex: "category",
-    key: "category",
-    render: category => <span>{category && category.categoryName}</span>
+    title: "Отрасль",
+    dataIndex: "industry",
+    key: "industry",
+    width: 200,
+  },
+  {
+    title: "Специализация",
+    dataIndex: "specializations",
+    key: "specializations",
+    render: (specializations) => (
+      <span>{specializations.map((elem) => `${elem.specName} \n`)}</span>
+    ),
+    width: 200,
   },
   {
     title: "Номер телефона",
     dataIndex: "phone",
-    key: "phone"
+    key: "phone",
+    render: (phone) => <span>8{phone}</span>,
   },
   {
-    title: "Веб-сайт",
-    dataIndex: "site",
-    key: "site"
+    title: "Тариф",
+    dataIndex: "subscriptionType",
+    key: "subscriptionType",
+    render: (subscriptionType) => (
+      <span>{subscriptionType === "FULL" ? "Полный" : "Ограниченный"}</span>
+    ),
   },
   {
-    title: "Статус",
-    dataIndex: "status",
-    key: "status",
-    render: status => (
-      <span>{status === "BLOCKED" ? "Заблокирован" : "Активный"}</span>
-    )
-  }
+    title: "Дата начало подписки",
+    dataIndex: "subscriptionStart",
+    key: "subscriptionStart",
+    render: (subscriptionStart) => (
+      <span>
+        {subscriptionStart &&
+          moment(subscriptionStart).subtract(1, "months").format("DD/MM/YYYY")}
+      </span>
+    ),
+  },
+  {
+    title: "Дата окончания подписки",
+    dataIndex: "subscriptionEnd",
+    key: "subscriptionEnd",
+    render: (subscriptionEnd) => (
+      <span>
+        {subscriptionEnd &&
+          moment(subscriptionEnd).subtract(1, "months").format("DD/MM/YYYY")}
+      </span>
+    ),
+  },
+  {
+    title: "Остаток за размещения баннера",
+    dataIndex: "bannerBalance",
+    key: "bannerBalance",
+    render: (bannerBalance) => (
+      <span
+        style={
+          bannerBalance < 1000
+            ? {
+                backgroundColor: "red",
+                padding: "10px 20px",
+              }
+            : {}
+        }
+      >
+        {bannerBalance}
+      </span>
+    ),
+    width: 170,
+  },
+  {
+    title: "Менеджер",
+    dataIndex: "manager",
+    key: "manager",
+    render: (manager) => {
+      return (
+        <span>
+          {manager?.firstName} {manager?.lastName}
+        </span>
+      );
+    },
+  },
 ];
 
 export default class MarketTable extends React.Component {
@@ -90,9 +159,11 @@ export default class MarketTable extends React.Component {
     spinning: false,
     editModal: false,
     files: [],
-    categories: [],
+    specializations: [],
     productCategories: [],
-    logo: ""
+    cities: [],
+    logo: "",
+    specializationIds: [],
   };
 
   componentDidMount() {
@@ -102,36 +173,32 @@ export default class MarketTable extends React.Component {
   refresh = () => {
     const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
+    const headers = {};
+    axios
+      .get(`${url}api/v1/city/all`, {
+        headers,
+      })
+      .then((res) => this.setState({ cities: res.data.cities }))
+      .catch((err) => console.log(err));
     axios
       .get(`${url}api/v1/market`, {
-        headers
+        headers,
       })
-      .then(res => {
+      .then((res) => {
         console.log(res.data);
 
-        this.setState({ markets: res.data.markets });
+        this.setState({ markets: res.data.markets, spinning: false });
         axios
-          .get(`${url}api/v1/category`, {
-            headers
+          .get(`${url}api/v1/spec`, {
+            headers,
           })
-          .then(res => {
-            this.setState({ categories: res.data.categories });
-            axios
-              .get(`${url}api/v1/product-category`, {
-                headers
-              })
-              .then(res => {
-                this.setState({
-                  spinning: false,
-                  productCategories: res.data.productCategories
-                });
-              });
+          .then((res) => {
+            this.setState({
+              specializations: res.data.specializations,
+            });
           });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
@@ -140,6 +207,7 @@ export default class MarketTable extends React.Component {
     const {
       about,
       address,
+      industry,
       breakSchedule,
       workdaysSchedule,
       saturdaySchedule,
@@ -151,12 +219,13 @@ export default class MarketTable extends React.Component {
       name,
       phone,
       productCategoriesIds,
-      categoryId
+      specializationIds,
     } = this.state;
     const obj = {
       about,
       address,
       breakSchedule,
+      industry,
       workdaysSchedule,
       saturdaySchedule,
       sundaySchedule,
@@ -167,19 +236,17 @@ export default class MarketTable extends React.Component {
       name,
       phone,
       productCategoriesIds,
-      categoryId
+      specializationIds,
     };
-    const { token } = store.getState().userReducer;
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
-
+    const headers = {};
+    this.setState({ editModal: false, spinning: true });
     axios
       .post(
-        `${url}api/v1/admin/market`,
+        `${url}api/v1/super/market`,
         {
           about: this.state.about,
           address: this.state.address,
+          industry: this.state.industry,
           breakSchedule: this.state.breakSchedule,
           workdaysSchedule: this.state.workdaysSchedule,
           saturdaySchedule: this.state.saturdaySchedule,
@@ -190,14 +257,14 @@ export default class MarketTable extends React.Component {
           email: this.state.email,
           name: this.state.name,
           phone: this.state.phone,
-          productCategoriesIds: this.state.productCategoriesIds,
-          categoryId
+          cityId: this.state.cityId,
+          specializationIds,
         },
         {
-          headers
+          headers,
         }
       )
-      .then(resmarket => {
+      .then((resmarket) => {
         const file = new FormData();
         file.append("file", this.state.logo);
 
@@ -206,44 +273,42 @@ export default class MarketTable extends React.Component {
           url: `${url}api/v1/image/market/${resmarket.data.id}`,
           data: file,
           headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data"
-          }
+            "Content-Type": "multipart/form-data",
+          },
         };
 
-        axios(authOptions).then(res => {
-          const file = new FormData();
-          this.state.files.forEach(element => {
-            file.append("files", element);
+        axios(authOptions).then((res) => {
+          const file2 = new FormData();
+          this.state.files.forEach((element) => {
+            file2.append("files", element);
           });
           const authOptionsPhotos = {
             method: "POST",
             url: `${url}api/v1/image/market/${resmarket.data.id}/photos`,
-            data: file,
+            data: file2,
             headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data"
-            }
+              "Content-Type": "multipart/form-data",
+            },
           };
 
-          axios(authOptionsPhotos).then(res => {
+          axios(authOptionsPhotos).then((res) => {
             this.refresh();
             this.setState({ editModal: false });
           });
         });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
 
     console.log(obj);
   };
 
-  onChangeLogo = info => {
+  onChangeLogo = (info) => {
     this.setState({ logo: info.file.originFileObj });
   };
 
-  onChangeUploading = info => {
+  onChangeUploading = (info) => {
     if (info.file.status !== "uploading") {
       console.log(info.file, info.fileList);
     }
@@ -264,8 +329,8 @@ export default class MarketTable extends React.Component {
       name: "file",
       action: "https://www.mocky.io/v2/5cc8019d300000980a055e76",
       headers: {
-        authorization: "authorization-text"
-      }
+        authorization: "authorization-text",
+      },
     };
     return (
       <Content style={{ padding: "0 24px", minHeight: 280 }}>
@@ -281,30 +346,44 @@ export default class MarketTable extends React.Component {
         >
           <Form>
             <Form.Item label="Название маркета">
-              <Input onChange={e => this.setState({ name: e.target.value })} />
+              <Input
+                onChange={(e) => this.setState({ name: e.target.value })}
+              />
             </Form.Item>
             <Form.Item label="Адрес">
               <Input
-                onChange={e => this.setState({ address: e.target.value })}
+                onChange={(e) => this.setState({ address: e.target.value })}
               />
             </Form.Item>
             <Form.Item label="Телефон">
-              <Input onChange={e => this.setState({ phone: e.target.value })} />
+              <Input
+                onChange={(e) => this.setState({ phone: e.target.value })}
+              />
             </Form.Item>
             <Form.Item label="E-mail">
-              <Input onChange={e => this.setState({ email: e.target.value })} />
+              <Input
+                onChange={(e) => this.setState({ email: e.target.value })}
+              />
             </Form.Item>
 
-            <Form.Item label="Категория">
+            <Form.Item label="Отрасль">
+              <Input
+                onChange={(e) => this.setState({ industry: e.target.value })}
+              />
+            </Form.Item>
+
+            <Form.Item label="Специялизация">
               <Row gutter={16}>
                 <Col span={24}>
                   <Select
-                    onChange={categoryId => this.setState({ categoryId })}
-                    defaultValue={this.state.categoryId}
+                    onChange={(specializationIds) =>
+                      this.setState({ specializationIds })
+                    }
+                    mode="multiple"
                   >
-                    {this.state.categories.map(cat => (
-                      <Select.Option value={cat.id}>
-                        {cat.categoryName}
+                    {this.state.specializations.map((spec) => (
+                      <Select.Option key={spec.id} value={spec.id}>
+                        {spec.specName}
                       </Select.Option>
                     ))}
                   </Select>
@@ -312,18 +391,13 @@ export default class MarketTable extends React.Component {
               </Row>
             </Form.Item>
 
-            <Form.Item label="Продукты каких категории будет в маркете">
+            <Form.Item label="Город">
               <Row gutter={16}>
                 <Col span={24}>
-                  <Select
-                    onChange={productCategoriesIds =>
-                      this.setState({ productCategoriesIds })
-                    }
-                    mode="multiple"
-                  >
-                    {this.state.productCategories.map(cat => (
-                      <Select.Option value={cat.id}>
-                        {cat.categoryName}
+                  <Select onChange={(cityId) => this.setState({ cityId })}>
+                    {this.state.cities.map((city) => (
+                      <Select.Option value={city.id}>
+                        {city.cityName}
                       </Select.Option>
                     ))}
                   </Select>
@@ -332,12 +406,14 @@ export default class MarketTable extends React.Component {
             </Form.Item>
 
             <Form.Item label="Веб-сайт">
-              <Input onChange={e => this.setState({ site: e.target.value })} />
+              <Input
+                onChange={(e) => this.setState({ site: e.target.value })}
+              />
             </Form.Item>
             <Form.Item label="Про маркет">
               <TextArea
                 rows={4}
-                onChange={e => this.setState({ about: e.target.value })}
+                onChange={(e) => this.setState({ about: e.target.value })}
               />
             </Form.Item>
             <Form.Item label="Ссылка на видео в Youtube">
@@ -347,8 +423,10 @@ export default class MarketTable extends React.Component {
               </span>
               <Input
                 placeholder={"Пример: https://youtu.be/5-4TgpDYPwg"}
-                onChange={e =>
-                  this.setState({ youtubeVideoLink: e.target.value })
+                onChange={(e) =>
+                  this.setState({
+                    youtubeVideoLink: e.target.value,
+                  })
                 }
               />
             </Form.Item>
@@ -357,8 +435,10 @@ export default class MarketTable extends React.Component {
                 <Form.Item label="График работы(рабочине дни)">
                   <Input
                     placeholder="9:00-18:00"
-                    onChange={e =>
-                      this.setState({ workdaysSchedule: e.target.value })
+                    onChange={(e) =>
+                      this.setState({
+                        workdaysSchedule: e.target.value,
+                      })
                     }
                   />
                 </Form.Item>
@@ -367,8 +447,10 @@ export default class MarketTable extends React.Component {
                 <Form.Item label="График работы(суббота)">
                   <Input
                     placeholder="9:00-14:00"
-                    onChange={e =>
-                      this.setState({ saturdaySchedule: e.target.value })
+                    onChange={(e) =>
+                      this.setState({
+                        saturdaySchedule: e.target.value,
+                      })
                     }
                   />
                 </Form.Item>
@@ -379,8 +461,10 @@ export default class MarketTable extends React.Component {
                 <Form.Item label="График работы(воскресенье)">
                   <Input
                     placeholder="выходной"
-                    onChange={e =>
-                      this.setState({ sundaySchedule: e.target.value })
+                    onChange={(e) =>
+                      this.setState({
+                        sundaySchedule: e.target.value,
+                      })
                     }
                   />
                 </Form.Item>
@@ -389,8 +473,10 @@ export default class MarketTable extends React.Component {
                 <Form.Item label="График работы(Перерыв)">
                   <Input
                     placeholder="12:00-13:00"
-                    onChange={e =>
-                      this.setState({ breakSchedule: e.target.value })
+                    onChange={(e) =>
+                      this.setState({
+                        breakSchedule: e.target.value,
+                      })
                     }
                   />
                 </Form.Item>
@@ -427,7 +513,11 @@ export default class MarketTable extends React.Component {
           </Button>
         </Button.Group>
         <Spin tip="Подождите..." spinning={this.state.spinning}>
-          <Table columns={columns} dataSource={this.state.markets} />
+          <Table
+            columns={columns}
+            dataSource={this.state.markets}
+            scroll={{ x: true }}
+          />
         </Spin>
       </Content>
     );

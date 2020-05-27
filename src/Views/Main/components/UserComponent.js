@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Card, Icon, Skeleton, Avatar, Tooltip } from "antd";
 import Meta from "antd/lib/card/Meta";
+import { Link } from "react-router-dom";
 
 const url = "http://91.201.214.201:8443/";
 const sex = { M: "Мужской", F: "Женский" };
 
-export const UserComponent = ({ user }) => {
+export const UserComponent = ({ user, master }) => {
   const [loading, setloading] = useState(true);
 
   useEffect(() => {
@@ -17,11 +18,15 @@ export const UserComponent = ({ user }) => {
   return (
     <div>
       <Card
-        style={{ width: 300}}
+        style={{ width: 300 }}
         actions={[
           <span>{sex[user.sex]}</span>,
           <Tooltip title="Посмотреть профиль">
-            <Icon type="eye" key="look" />
+            <Link
+              to={`/users/${master ? "masters" : "clients"}/${user.username}`}
+            >
+              <Icon type="eye" key="look" />
+            </Link>
           </Tooltip>
         ]}
       >
@@ -37,7 +42,7 @@ export const UserComponent = ({ user }) => {
               />
             }
             title={`${user.firstName} ${user.lastName}`}
-            description={user.notes}
+            description={`8${user.username}`}
           />
         </Skeleton>
       </Card>

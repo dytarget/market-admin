@@ -13,7 +13,8 @@ import {
   Popconfirm,
   Modal,
   Select,
-  message
+  message,
+  BackTop,
 } from "antd";
 import axios from "axios";
 import ImageGallery from "react-image-gallery";
@@ -23,6 +24,9 @@ import getUserRating from "../../../utils/getUserRating";
 import getUserDuration from "../../../utils/getUserDuration";
 import getMasterStatus from "../../../utils/getMasterStatus";
 import "./Photo.css";
+import { CommentsList } from "../components/CommentsList";
+import getLastOnline from "../../../utils/getLastOnline";
+import sendPushNotification from "../../../utils/sendPushNotification";
 
 const { Content } = Layout;
 const { TextArea } = Input;
@@ -39,8 +43,11 @@ export class MasterProfile extends Component {
       spinning: false,
       responds: [],
       editModal: false,
+      editModalNot: false,
       masterType: "",
-      orgName: ""
+      orgName: "",
+      title: "",
+      body: "",
     };
   }
 
@@ -52,74 +59,66 @@ export class MasterProfile extends Component {
     this.setState({ spinning: true });
     axios
       .get(`${url}api/v1/user/${this.props.match.params.username}`, {
-        headers: {
-          Authorization: `Bearer ${store.getState().userReducer.token}`
-        }
+        headers: {},
       })
-      .then(res => {
+      .then((res) => {
         this.setState({ master: res.data });
         axios
           .get(`${url}api/v1/history/responded-master/${res.data.id}`, {
-            headers: {
-              Authorization: `Bearer ${store.getState().userReducer.token}`
-            }
+            headers: {},
           })
-          .then(res => {
+          .then((res) => {
             this.setState({
               responds: res.data.communicationHistories,
-              spinning: false
+              spinning: false,
             });
           });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
 
-  deleteImage = id => {
+  deleteImage = (id) => {
     this.setState({ spinning: true });
     console.log(id);
 
     axios
       .delete(`${url}api/v1/image/${id}`, {
-        headers: {
-          Authorization: `Bearer ${store.getState().userReducer.token}`
-        }
+        headers: {},
       })
-      .then(res => {
+      .then((res) => {
         this.refresh();
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
 
-  deleteAvatar = userId => {
+  deleteAvatar = (userId) => {
     this.setState({ spinning: true });
 
     axios
       .delete(`${url}api/v1/image/user/${userId}/avatar`, {
-        headers: {
-          Authorization: `Bearer ${store.getState().userReducer.token}`
-        }
+        headers: {},
       })
-      .then(res => {
+      .then((res) => {
         this.refresh();
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
 
-  updateMasterStatus = status => {
+  updateMasterStatus = (status) => {
     this.setState({ spinning: true });
 
     axios
       .put(`${url}api/v1/user/${this.state.master.username}`, { status })
-      .then(res => {
+      .then((res) => {
         this.refresh();
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
@@ -132,18 +131,51 @@ export class MasterProfile extends Component {
       message.error("Заполните организацю мастера");
     } else {
       axios
-        .put(`${url}api/v1/user/${master.username}`, { masterType, orgName })
-        .then(res => {
+        .put(`${url}api/v1/user/${master.username}`, {
+          masterType,
+          orgName,
+        })
+        .then((res) => {
           this.refresh();
         })
-        .catch(err => {
+        .catch((err) => {
           console.log(err);
         });
     }
   };
 
+  pushNotification = () => {
+    const { title, body, master } = this.state;
+    if (title.length < 1 || body.length < 1) {
+      message.error("Заполните поля");
+    } else {
+      sendPushNotification(body, title, master.id, "", "", "master", "bells");
+      this.setState({ editModalNot: false });
+    }
+  };
+
+  blockMaster = () => {
+    this.setState({ spinning: true });
+
+    axios
+      .patch(
+        `${url}api/v1/admin/user/block/${this.state.master.id}`,
+        {},
+        {
+          headers: {},
+        }
+      )
+      .then((res) => {
+        this.refresh();
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
   render() {
     const { master, spinning, responds } = this.state;
+    responds.map((item) => (item.respondedMaster = master));
     const usernameMatch =
       master === "" || master.username.match(/^(\d{3})(\d{3})(\d{2})(\d{2})$/);
     const phoneNumber =
@@ -162,7 +194,7 @@ export class MasterProfile extends Component {
       master.worksPhotos.map((photos, index) => {
         const obj = {
           original: `http://91.201.214.201:8443/images/${photos.imageName}`,
-          thumbnail: `http://91.201.214.201:8443/images/${photos.imageName}`
+          thumbnail: `http://91.201.214.201:8443/images/${photos.imageName}`,
         };
         galleryPhotos.push(obj);
       });
@@ -170,7 +202,7 @@ export class MasterProfile extends Component {
       master.identificationPhotos.map((photos, index) => {
         const obj = {
           original: `http://91.201.214.201:8443/images/${photos.imageName}`,
-          thumbnail: `http://91.201.214.201:8443/images/${photos.imageName}`
+          thumbnail: `http://91.201.214.201:8443/images/${photos.imageName}`,
         };
         pasportPhotos.push(obj);
       });
@@ -182,9 +214,39 @@ export class MasterProfile extends Component {
           {spinning || (
             <Fragment>
               <Modal
+                title="Отправить уведомления для мастера"
+                visible={this.state.editModalNot}
+                okText="Отправить"
+                cancelText="Закрыть"
+                onCancel={() => this.setState({ editModalNot: false })}
+                onOk={this.pushNotification}
+              >
+                <Form>
+                  <Form.Item label="Заголовок">
+                    <Input
+                      value={this.state.title}
+                      onChange={(text) =>
+                        this.setState({ title: text.target.value })
+                      }
+                    />
+                  </Form.Item>
+                  <Form.Item label="Содержимое">
+                    <Input
+                      value={this.state.body}
+                      onChange={(text) =>
+                        this.setState({ body: text.target.value })
+                      }
+                    />
+                  </Form.Item>
+                </Form>
+              </Modal>
+              <Modal
                 title="Редактировать мастера"
                 visible={this.state.editModal}
-                cancelButtonProps={{ style: { opacity: 0 }, disabled: true }}
+                cancelButtonProps={{
+                  style: { opacity: 0 },
+                  disabled: true,
+                }}
                 okText="Закрыть"
                 closable={false}
                 onOk={() => this.setState({ editModal: false })}
@@ -194,7 +256,7 @@ export class MasterProfile extends Component {
                     <Select
                       defaultValue={master.masterType}
                       style={{ width: 120 }}
-                      onChange={value => this.setState({ masterType: value })}
+                      onChange={(value) => this.setState({ masterType: value })}
                     >
                       <Option value="INDIVIDUAL">Частный</Option>
                       <Option value="COMPANY">Организация</Option>
@@ -204,7 +266,7 @@ export class MasterProfile extends Component {
                     <Form.Item label="Организация мастера">
                       <Input
                         value={this.state.orgName}
-                        onChange={text =>
+                        onChange={(text) =>
                           this.setState({ orgName: text.target.value })
                         }
                       />
@@ -218,7 +280,11 @@ export class MasterProfile extends Component {
                   master.worksPhotos.map((photos, index) => (
                     <div key={`${index}`} className="photos-delete-container">
                       <img
-                        style={{ width: 70, height: 70, marginRight: 20 }}
+                        style={{
+                          width: 70,
+                          height: 70,
+                          marginRight: 20,
+                        }}
                         src={`http://91.201.214.201:8443/images/${photos.imageName}`}
                         alt="gg"
                       />
@@ -257,7 +323,7 @@ export class MasterProfile extends Component {
                       placement="top"
                       title={"Заблокировать ?"}
                       okText="Yes"
-                      onConfirm={() => this.updateMasterStatus("BLOCKED")}
+                      onConfirm={() => this.blockMaster()}
                       cancelText="No"
                     >
                       <Button type="danger">
@@ -299,6 +365,13 @@ export class MasterProfile extends Component {
                       <Icon type="delete" />
                     </Button>
                   </Popconfirm>
+                  <Button
+                    onClick={() => this.setState({ editModalNot: true })}
+                    type="default"
+                  >
+                    Отправить уведомление
+                    <Icon type="message" />
+                  </Button>
                 </Button.Group>
               </div>
 
@@ -357,20 +430,25 @@ export class MasterProfile extends Component {
                       </Col>
                       <Col span={12}>
                         <Form.Item label="Город">
-                          <Input value={master.city} />
+                          <Input value={master.city && master.city.cityName} />
                         </Form.Item>
                       </Col>
                     </Row>
 
                     <Row gutter={16}>
-                      <Col span={12}>
+                      <Col span={8}>
                         <Form.Item label="День рождения">
                           <Input value={`${master.birthday}`} />
                         </Form.Item>
                       </Col>
-                      <Col span={12}>
+                      <Col span={8}>
                         <Form.Item label="Уровень">
                           <Input value={getUserRating(master.rating)} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                        <Form.Item label="Был в сети">
+                          <Input value={getLastOnline(master.lastRequest)} />
                         </Form.Item>
                       </Col>
                     </Row>
@@ -446,7 +524,7 @@ export class MasterProfile extends Component {
                 <span>Услуги: </span>
                 <div style={{ marginLeft: 25 }}>
                   {master.services &&
-                    master.services.map(service => (
+                    master.services.map((service) => (
                       <p style={{ margin: 0, fontWeight: "bold" }}>
                         {service.serviceName} {service.cost} {service.unit}
                       </p>
@@ -467,11 +545,12 @@ export class MasterProfile extends Component {
                   <RespondList responds={responds} />
                 </TabPane>
                 <TabPane tab="Отзывы" key="2">
-                  {/* <RespondList responds={master.reviews} /> */}
+                  <CommentsList comments={master.reviews} />
                 </TabPane>
               </Tabs>
             </Fragment>
           )}
+          <BackTop />
         </Spin>
       </Content>
     );

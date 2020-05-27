@@ -16,7 +16,7 @@ import {
   message,
   Drawer,
   Divider,
-  Popconfirm
+  Popconfirm,
 } from "antd";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -32,7 +32,7 @@ export default class FAQTheme extends React.Component {
     spinning: false,
     editModal: false,
     visibleUpdate: false,
-    name: ""
+    name: "",
   };
 
   componentDidMount() {
@@ -42,19 +42,17 @@ export default class FAQTheme extends React.Component {
   refresh = () => {
     const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
+    const headers = {};
     axios
       .get(`${url}api/v1/faq-category`, {
-        headers
+        headers,
       })
-      .then(res => {
+      .then((res) => {
         console.log(res.data);
 
         this.setState({ spinning: false, faqCats: res.data });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
@@ -62,55 +60,53 @@ export default class FAQTheme extends React.Component {
   createFAQTheme = () => {
     this.setState({ editModal: false });
     const { token } = store.getState().userReducer;
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
+    const headers = {};
 
     axios
       .post(
-        `${url}api/v1/admin/faq/category`,
+        `${url}api/v1/super/faq/category`,
         {
-          name: this.state.name
+          name: this.state.name,
+          nameKz: this.state.nameKz,
         },
         {
-          headers
+          headers,
         }
       )
-      .then(res => {
+      .then((res) => {
         this.refresh();
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
 
   updateFAQTheme = () => {
     const { token } = store.getState().userReducer;
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
+    const headers = {};
 
     this.setState({ visibleUpdate: false });
 
     axios
-      .post(
-        `${url}api/v1/admin/faq/category/${this.state.id}`,
+      .patch(
+        `${url}api/v1/super/faq/category/${this.state.id}`,
         {
-          name: this.state.name
+          name: this.state.name,
+          nameKz: this.state.nameKz,
         },
         {
-          headers
+          headers,
         }
       )
-      .then(res => {
+      .then((res) => {
         this.refresh();
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
 
-  onChangeLogo = info => {
+  onChangeLogo = (info) => {
     this.setState({ image: info.file.originFileObj });
   };
 
@@ -119,35 +115,40 @@ export default class FAQTheme extends React.Component {
       name: "file",
       action: "https://www.mocky.io/v2/5cc8019d300000980a055e76",
       headers: {
-        authorization: "authorization-text"
-      }
+        authorization: "authorization-text",
+      },
     };
     const columns = [
       {
         title: "ID",
         dataIndex: "id",
-        key: "id"
+        key: "id",
       },
       {
         title: "Название ",
         dataIndex: "name",
-        key: "name"
+        key: "name",
+      },
+      {
+        title: "Название на казахском",
+        dataIndex: "nameKz",
+        key: "nameKz",
       },
       {
         title: "Сколько вопросов по этой теме",
         dataIndex: "faqs",
         key: "faqs",
-        render: faqs => <Input value={faqs ? faqs.length : 0} />
+        render: (faqs) => <span>{faqs ? faqs.length : 0}</span>,
       },
       {
         title: "Создан",
         dataIndex: "created",
         key: "created",
-        render: created => (
+        render: (created) => (
           <span>
             {created[2]}/{created[1]}/{created[0]}
           </span>
-        )
+        ),
       },
       {
         title: "Действия",
@@ -159,7 +160,8 @@ export default class FAQTheme extends React.Component {
                 this.setState({
                   visibleUpdate: true,
                   name: record.name,
-                  id: record.id
+                  nameKz: record.nameKz,
+                  id: record.id,
                 });
               }}
             >
@@ -175,8 +177,8 @@ export default class FAQTheme extends React.Component {
               <a>Удалить</a>
             </Popconfirm>
           </span>
-        )
-      }
+        ),
+      },
     ];
     return (
       <Content style={{ padding: "0 24px", minHeight: 280 }}>
@@ -186,7 +188,7 @@ export default class FAQTheme extends React.Component {
           width={720}
           onClose={() =>
             this.setState({
-              visibleUpdate: false
+              visibleUpdate: false,
             })
           }
           onOk={this.updateFAQTheme}
@@ -198,8 +200,17 @@ export default class FAQTheme extends React.Component {
                 <Form.Item label="Изменить название">
                   <Input
                     value={this.state.name}
-                    onChange={e => {
+                    onChange={(e) => {
                       this.setState({ name: e.target.value });
+                    }}
+                    type="text"
+                  />
+                </Form.Item>
+                <Form.Item label="Изменить название на казахском">
+                  <Input
+                    value={this.state.nameKz}
+                    onChange={(e) => {
+                      this.setState({ nameKz: e.target.value });
                     }}
                     type="text"
                   />
@@ -216,7 +227,7 @@ export default class FAQTheme extends React.Component {
               borderTop: "1px solid #e9e9e9",
               padding: "10px 16px",
               background: "#fff",
-              textAlign: "right"
+              textAlign: "right",
             }}
           >
             <Button
@@ -231,7 +242,7 @@ export default class FAQTheme extends React.Component {
           </div>
         </Drawer>
         <Modal
-          title="Создать новость"
+          title="Создать тему"
           visible={this.state.editModal}
           okText="Создать"
           cancelText="Закрыть"
@@ -241,7 +252,14 @@ export default class FAQTheme extends React.Component {
         >
           <Form>
             <Form.Item label="Название">
-              <Input onChange={e => this.setState({ name: e.target.value })} />
+              <Input
+                onChange={(e) => this.setState({ name: e.target.value })}
+              />
+            </Form.Item>
+            <Form.Item label="Название Kz">
+              <Input
+                onChange={(e) => this.setState({ nameKz: e.target.value })}
+              />
             </Form.Item>
           </Form>
         </Modal>
@@ -259,7 +277,7 @@ export default class FAQTheme extends React.Component {
           </Button>
         </Button.Group>
         <Spin tip="Подождите..." spinning={this.state.spinning}>
-          <Table columns={columns} dataSource={this.state.news} />
+          <Table columns={columns} dataSource={this.state.faqCats} />
         </Spin>
       </Content>
     );

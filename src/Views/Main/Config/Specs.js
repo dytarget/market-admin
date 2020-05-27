@@ -16,7 +16,7 @@ import {
   Drawer,
   Divider,
   Popconfirm,
-  Select
+  Select,
 } from "antd";
 import axios from "axios";
 import { store } from "../../../store";
@@ -36,34 +36,51 @@ export default class Specs extends React.Component {
     masterRu: "",
     id: "",
     visibleUpdate: false,
-    categoryId: ""
+    categoryId: "",
   };
 
   componentDidMount() {
     this.refresh();
   }
 
+  deleteCategory = (id) => {
+    const { token } = store.getState().userReducer;
+    this.setState({ spinning: true });
+    const authOptions = {
+      method: "DELETE",
+      url: `${url}api/v1/super/spec/${id}`,
+      headers: {},
+    };
+
+    axios(authOptions)
+      .then(() => this.refresh())
+      .catch(() => {
+        message.error(
+          "Вы не можете удалить, есть зависимости в этой специализации"
+        );
+        this.setState({ spinning: false });
+      });
+  };
+
   refresh = () => {
     const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
+    const headers = {};
     axios
       .get(`${url}api/v1/spec`, {
-        headers
+        headers,
       })
-      .then(res => {
+      .then((res) => {
         this.setState({ specs: res.data.specializations });
         axios
           .get(`${url}api/v1/category`, {
-            headers
-          })  
-          .then(res => {
+            headers,
+          })
+          .then((res) => {
             this.setState({ spinning: false, categories: res.data.categories });
           });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
@@ -73,26 +90,24 @@ export default class Specs extends React.Component {
     this.setState({ spinning: true, editModal: false });
     const authOptions = {
       method: "POST",
-      url: `${url}api/v1/admin/spec`,
+      url: `${url}api/v1/super/spec`,
       data: {
         categoryId: this.state.categoryId,
         masterName: this.state.masterRu,
         masterNameKz: this.state.masterKz,
         specName: this.state.nameRu,
-        specNameKz: this.state.nameKz
+        specNameKz: this.state.nameKz,
       },
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
-      json: true
+      headers: {},
+      json: true,
     };
 
     axios(authOptions)
-      .then(res => {
+      .then((res) => {
         this.refresh();
         message.success("Успешно!");
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
         message.error("Ошибка!");
       });
@@ -102,28 +117,26 @@ export default class Specs extends React.Component {
     const { token } = store.getState().userReducer;
     const authOptions = {
       method: "PATCH",
-      url: `${url}api/v1/admin/spec/${this.state.id}`,
+      url: `${url}api/v1/super/spec/${this.state.id}`,
       data: {
         categoryId: this.state.categoryId,
         masterName: this.state.masterRu,
         masterNameKz: this.state.masterKz,
         specName: this.state.nameRu,
-        specNameKz: this.state.nameKz
+        specNameKz: this.state.nameKz,
       },
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
-      json: true
+      headers: {},
+      json: true,
     };
 
     this.setState({ spinning: true });
     axios(authOptions)
-      .then(res => {
+      .then((res) => {
         this.refresh();
         message.success("Успешно!");
         this.setState({ visibleUpdate: false });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
         message.error("Ошибка!");
       });
@@ -134,45 +147,45 @@ export default class Specs extends React.Component {
       {
         title: "ID",
         dataIndex: "id",
-        key: "id"
+        key: "id",
       },
       {
         title: "Название Ru",
         dataIndex: "specName",
-        key: "specName"
+        key: "specName",
       },
       {
         title: "Название kz",
         dataIndex: "specNameKz",
-        key: "specNameKz"
+        key: "specNameKz",
       },
       {
         title: "Название мастера Ru",
         dataIndex: "masterName",
-        key: "masterName"
+        key: "masterName",
       },
       {
         title: "Название мастера Kz",
         dataIndex: "masterNameKz",
-        key: "masterNameKz"
+        key: "masterNameKz",
       },
       {
         title: "Категория",
         dataIndex: "category",
         key: "category",
-        render: category => {
+        render: (category) => {
           return <span>{category && category.categoryName}</span>;
-        }
+        },
       },
       {
         title: "Создан",
         dataIndex: "created",
         key: "created",
-        render: created => (
+        render: (created) => (
           <span>
             {created[2]}/{created[1]}/{created[0]}
           </span>
-        )
+        ),
       },
       {
         title: "Действия",
@@ -188,15 +201,25 @@ export default class Specs extends React.Component {
                   masterRu: record.masterName,
                   masterKz: record.masterNameKz,
                   categoryId: record.category.id,
-                  id: record.id
+                  id: record.id,
                 });
               }}
             >
               Изменить
-            </a>
+            </a>{" "}
+            |{" "}
+            <Popconfirm
+              placement="top"
+              onConfirm={() => this.deleteCategory(record.id)}
+              title={"Удалить ?"}
+              okText="Yes"
+              cancelText="No"
+            >
+              <a>Удалить</a>
+            </Popconfirm>
           </span>
-        )
-      }
+        ),
+      },
     ];
 
     return (
@@ -207,7 +230,7 @@ export default class Specs extends React.Component {
           width={720}
           onClose={() =>
             this.setState({
-              visibleUpdate: false
+              visibleUpdate: false,
             })
           }
           visible={this.state.visibleUpdate}
@@ -217,10 +240,10 @@ export default class Specs extends React.Component {
               <Row gutter={16}>
                 <Col span={24}>
                   <Select
-                    onChange={categoryId => this.setState({ categoryId })}
+                    onChange={(categoryId) => this.setState({ categoryId })}
                     defaultValue={this.state.categoryId}
                   >
-                    {this.state.categories.map(cat => (
+                    {this.state.categories.map((cat) => (
                       <Select.Option value={cat.id}>
                         {cat.categoryName}
                       </Select.Option>
@@ -234,7 +257,7 @@ export default class Specs extends React.Component {
                 <Form.Item label={`Название на Ru`}>
                   <Input
                     value={this.state.nameRu}
-                    onChange={e => this.setState({ nameRu: e.target.value })}
+                    onChange={(e) => this.setState({ nameRu: e.target.value })}
                     type="text"
                   />
                 </Form.Item>
@@ -243,7 +266,7 @@ export default class Specs extends React.Component {
                 <Form.Item label={`Название на Kz`}>
                   <Input
                     value={this.state.nameKz}
-                    onChange={e => this.setState({ nameKz: e.target.value })}
+                    onChange={(e) => this.setState({ nameKz: e.target.value })}
                     type="text"
                   />
                 </Form.Item>
@@ -254,7 +277,9 @@ export default class Specs extends React.Component {
                 <Form.Item label={`Название мастера на Ru`}>
                   <Input
                     value={this.state.masterRu}
-                    onChange={e => this.setState({ masterRu: e.target.value })}
+                    onChange={(e) =>
+                      this.setState({ masterRu: e.target.value })
+                    }
                     type="text"
                   />
                 </Form.Item>
@@ -263,7 +288,9 @@ export default class Specs extends React.Component {
                 <Form.Item label={`Название мастера на Kz`}>
                   <Input
                     value={this.state.masterKz}
-                    onChange={e => this.setState({ masterKz: e.target.value })}
+                    onChange={(e) =>
+                      this.setState({ masterKz: e.target.value })
+                    }
                     type="text"
                   />
                 </Form.Item>
@@ -279,7 +306,7 @@ export default class Specs extends React.Component {
               borderTop: "1px solid #e9e9e9",
               padding: "10px 16px",
               background: "#fff",
-              textAlign: "right"
+              textAlign: "right",
             }}
           >
             <Button
@@ -307,9 +334,9 @@ export default class Specs extends React.Component {
               <Row gutter={16}>
                 <Col span={24}>
                   <Select
-                    onChange={categoryId => this.setState({ categoryId })}
+                    onChange={(categoryId) => this.setState({ categoryId })}
                   >
-                    {this.state.categories.map(cat => (
+                    {this.state.categories.map((cat) => (
                       <Select.Option value={cat.id}>
                         {cat.categoryName}
                       </Select.Option>
@@ -323,7 +350,7 @@ export default class Specs extends React.Component {
                 <Form.Item label="Название на KZ">
                   <Input
                     value={this.state.nameKz}
-                    onChange={e => this.setState({ nameKz: e.target.value })}
+                    onChange={(e) => this.setState({ nameKz: e.target.value })}
                     type="text"
                   />
                 </Form.Item>
@@ -332,7 +359,7 @@ export default class Specs extends React.Component {
                 <Form.Item label="Название на RU">
                   <Input
                     value={this.state.nameRu}
-                    onChange={e => this.setState({ nameRu: e.target.value })}
+                    onChange={(e) => this.setState({ nameRu: e.target.value })}
                     type="text"
                   />
                 </Form.Item>
@@ -343,7 +370,9 @@ export default class Specs extends React.Component {
                 <Form.Item label="Название мастера на KZ">
                   <Input
                     value={this.state.masterKz}
-                    onChange={e => this.setState({ masterKz: e.target.value })}
+                    onChange={(e) =>
+                      this.setState({ masterKz: e.target.value })
+                    }
                     type="text"
                   />
                 </Form.Item>
@@ -352,7 +381,9 @@ export default class Specs extends React.Component {
                 <Form.Item label="Название мастера на RU">
                   <Input
                     value={this.state.masterRu}
-                    onChange={e => this.setState({ masterRu: e.target.value })}
+                    onChange={(e) =>
+                      this.setState({ masterRu: e.target.value })
+                    }
                     type="text"
                   />
                 </Form.Item>
@@ -373,7 +404,7 @@ export default class Specs extends React.Component {
             Добавить специализацию
           </Button>
         </Button.Group>
-       
+
         <Spin tip="Подождите..." spinning={this.state.spinning}>
           <Table columns={columns} dataSource={this.state.specs} />
         </Spin>

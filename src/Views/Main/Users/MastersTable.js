@@ -1,5 +1,5 @@
 import React from "react";
-import { Icon, Table, Button, Layout, Spin, Avatar } from "antd";
+import { Icon, Table, Button, Layout, Spin, Avatar, Input } from "antd";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { store } from "../../../store";
@@ -12,13 +12,13 @@ const columns = [
   {
     title: "ID",
     dataIndex: "id",
-    key: "id"
+    key: "id",
   },
   {
     title: "Аватар",
     dataIndex: "avatar",
     key: "avatar",
-    render: avatar => (
+    render: (avatar) => (
       <Avatar
         src={
           avatar
@@ -26,7 +26,7 @@ const columns = [
             : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
         }
       />
-    )
+    ),
   },
   {
     title: "ФИО",
@@ -38,30 +38,39 @@ const columns = [
           {firstName} {data.lastName}
         </span>
       </Link>
-    )
+    ),
   },
   {
     title: "Город",
     dataIndex: "city",
-    key: "city"
+    key: "city",
+    render: (city) => <span>{city.cityName}</span>,
+  },
+  {
+    title: "Завершенные заказы",
+    dataIndex: "masterOrderCount",
+    key: "masterOrderCount",
   },
   {
     title: "Специализации",
     dataIndex: "specializations",
     key: "specializations",
-    render: specializations => (
+    render: (specializations) => (
       <div>
-        {specializations.map(({ specName }) => (
-          <p style={{ margin: 0 }}>{specName}</p>
-        ))}
+        {
+          specializations && specializations.length
+          // map(({ specName }) => (
+          // <p style={{ margin: 0 }}>{specName}</p>
+          // ))
+        }
       </div>
-    )
+    ),
   },
   {
     title: "Номер телефона",
     dataIndex: "username",
     key: "username",
-    render: username => {
+    render: (username) => {
       const usernameMatch = username.match(/^(\d{3})(\d{3})(\d{2})(\d{2})$/);
       const phoneNumber =
         "(" +
@@ -74,26 +83,28 @@ const columns = [
         usernameMatch[4];
 
       return <span>8-{phoneNumber}</span>;
-    }
+    },
   },
   {
     title: "Пол",
     dataIndex: "sex",
     key: "sex",
-    render: sex => <span>{sex === "M" ? "Мужской" : "Женский"}</span>
+    render: (sex) => <span>{sex === "M" ? "Мужской" : "Женский"}</span>,
   },
   {
     title: "Статус",
     dataIndex: "status",
     key: "status",
-    render: status => <span>{getMasterStatus(status)}</span>
-  }
+    render: (status) => <span>{getMasterStatus(status)}</span>,
+  },
 ];
 
 export default class MastersTable extends React.Component {
   state = {
     masters: [],
-    spinning: false
+    data: [],
+    search: "",
+    spinning: false,
   };
 
   componentDidMount() {
@@ -103,21 +114,38 @@ export default class MastersTable extends React.Component {
   refresh = () => {
     const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
+    const headers = {};
     axios
       .get(`${url}api/v1/user/masters`, {
-        headers
+        headers,
       })
-      .then(res => {
+      .then((res) => {
         console.log(res.data);
 
-        this.setState({ spinning: false, masters: res.data.users });
+        this.setState({
+          spinning: false,
+          masters: res.data.users,
+          data: res.data.users,
+        });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
+  };
+
+  change = (value) => {
+    this.setState({ search: value.target.value });
+    if (value.target.value === "") {
+      this.setState({ data: this.state.masters });
+    } else {
+      const data = this.state.masters.filter(
+        (data) =>
+          `${data.firstName}${data.lastName}`
+            .toLowerCase()
+            .indexOf(value.target.value.toLowerCase()) !== -1
+      );
+      this.setState({ data });
+    }
   };
 
   render() {
@@ -130,8 +158,15 @@ export default class MastersTable extends React.Component {
             Обновить
           </Button>
         </Button.Group>
+        <Input
+          style={{ width: 300, marginLeft: 30 }}
+          placeholder="Поиск по ФИО"
+          value={this.state.search}
+          onChange={this.change}
+          prefix={<Icon type="search" style={{ color: "rgba(0,0,0,.25)" }} />}
+        />
         <Spin tip="Подождите..." spinning={this.state.spinning}>
-          <Table columns={columns} dataSource={this.state.masters} />
+          <Table columns={columns} dataSource={this.state.data} />
         </Spin>
       </Content>
     );

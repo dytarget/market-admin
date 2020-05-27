@@ -1,7 +1,7 @@
 const types = ["FIXED", "UP_TO", "CONTRACTUAL"];
 
 const texts = {
-  CONTRACTUAL: "обсудим",
+  CONTRACTUAL: "договормися",
   UP_TO: "до"
 };
 

@@ -8,17 +8,32 @@ import MasterProfile from "./MasterProfile";
 import ClientsProfile from "./ClientsProfile";
 import MarketTable from "./MarketList";
 import MarketProfile from "./MarketProfile";
+import Axios from "axios";
+import config from "../../../config/config";
+import moment from "moment";
 
 const { Content, Sider } = Layout;
 
 export class Users extends Component {
+  state = {
+    statisticsInfo: {},
+  };
   componentDidMount() {
     if (window.location.pathname === "/users") {
       this.props.history.push("/users/clients");
     }
+    const today = moment().format("YYYY-MM-DD");
+    console.log(
+      `${config.url}api/v1/admin/report/users?from=${config.lastDefault}&to=${today}`
+    );
+
+    Axios.get(
+      `${config.url}api/v1/admin/report/users?from=${config.lastDefault}&to=${today}`
+    ).then((res) => this.setState({ statisticsInfo: res.data }));
   }
 
   render() {
+    const { statisticsInfo } = this.state;
     return (
       <div>
         <Content style={{ padding: "0 50px" }}>
@@ -33,13 +48,21 @@ export class Users extends Component {
                 style={{ height: "100%" }}
               >
                 <Menu.Item key="/users/clients">
-                  <Link to="/users/clients">Заказчики</Link>
+                  <Link to="/users/clients">
+                    Заказчики {statisticsInfo.customerCount}
+                  </Link>
                 </Menu.Item>
                 <Menu.Item key="/users/masters">
-                  <Link to="/users/masters">Мастеры</Link>
+                  <Link to="/users/masters">
+                    Мастеры{" "}
+                    {statisticsInfo.individualMasterCount +
+                      statisticsInfo.companyMasterCount}
+                  </Link>
                 </Menu.Item>
                 <Menu.Item key="/users/markets">
-                  <Link to="/users/markets">Маркеты</Link>
+                  <Link to="/users/markets">
+                    Маркеты {statisticsInfo.marketCount}
+                  </Link>
                 </Menu.Item>
               </Menu>
             </Sider>

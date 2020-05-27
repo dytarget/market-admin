@@ -1,32 +1,49 @@
 import axios from "axios";
 import { store } from "../store";
 
-const url = "http://91.201.214.201:8443/";
+const url = "http://91.201.214.201:8443";
 
-const sendPushNotification = (body, title, userId) => {
+const sendPushNotification = (
+  body,
+  title,
+  userId,
+  screen,
+  itemId,
+  mode,
+  type,
+  clientModal,
+  masterModal,
+  clientId,
+  masterId
+) => {
   const { token } = store.getState().userReducer;
   const pushBody = {
-    body,
+    userIds: [userId],
+    title,
     channelId: "chat-messages",
-    priority: "DEFAULT",
-    sound: "default",
-    title
+    body,
+    data: {
+      additionalProp1: {
+        screen,
+        title,
+        body,
+        type,
+        mode,
+      },
+      additionalProp2: { itemId, clientModal, masterModal, clientId, masterId },
+    },
   };
 
-  console.log(pushBody);
-  console.log(userId);
-
   axios
-    .post(`${url}api/v1/push/${userId}`, pushBody, {
+    .post(`${url}/api/v1/push`, pushBody, {
       headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      }
+        "Content-Type": "application/json",
+      },
     })
-    .then(res => {
+    .then((res) => {
       console.log(res);
     })
-    .catch(err => {
+    .catch((err) => {
       console.log(JSON.stringify(err));
     });
 };

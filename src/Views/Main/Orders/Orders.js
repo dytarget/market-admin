@@ -3,7 +3,7 @@ import { Layout, Menu, Breadcrumb, Icon, Spin } from "antd";
 import { connect } from "react-redux";
 import axios from "axios";
 import { store } from "../../../store";
-import { Switch, Route } from "react-router-dom";
+import { Switch, Route, Link } from "react-router-dom";
 import { OrderTable } from "./OrderTable";
 import OrderSingle from "./OrderSingle";
 
@@ -14,7 +14,7 @@ const allStatus = [
   "IN_PROGRESS",
   "COMPLETED",
   "WAITING_FOR_CUSTOMER_RESPONSE",
-  "CANCELLED"
+  "CANCELLED",
 ];
 
 const url = "http://91.201.214.201:8443/";
@@ -26,7 +26,12 @@ export class Orders extends Component {
 
     this.state = {
       orders: [],
-      spinning: false
+      spinning: false,
+      page: 0,
+      status: allStatus,
+      searchText: "",
+      searchType: "DESCRIPTION",
+      key: "1",
     };
   }
 
@@ -34,29 +39,38 @@ export class Orders extends Component {
     this.refresh(allStatus);
   }
 
-  refresh = status => {
-    const { token } = store.getState().userReducer;
+  refresh = (status) => {
     this.setState({ spinning: true });
-    const headers = {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-    let search = "";
-    status.map(item => (search += `status=${item}&`));
+
+    let statuses = "";
+    status.map((item) => (statuses += `status=${item}&`));
     axios
       .get(
-        `${url}api/v1/order?mode=ALL&${search.substring(
+        `${url}api/v1/order?mode=ALL&${statuses.substring(
           0,
-          search.lastIndexOf("&")
-        )}&orderBy=CREATED&direction=DESC`,
-        {
-          headers
-        }
+          statuses.lastIndexOf("&")
+        )}&orderBy=CREATED&direction=DESC&page=${this.state.page}`
       )
-      .then(res => {
-        this.setState({ spinning: false, orders: res.data.orders });
+      .then((res) => {
+        this.setState({ spinning: false, orders: res.data });
       })
-      .catch(err => {
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  refreshSearch = (type, text) => {
+    this.setState({ spinning: true, key: "1", status: allStatus });
+    axios
+      .get(`${url}api/v1/order/search?param=${type}&q=${text}`)
+      .then((res) => {
+        console.log(
+          `${url}api/v1/order/search?param=${type}&q=${text}`,
+          res.data
+        );
+        this.setState({ spinning: false, orders: res.data });
+      })
+      .catch((err) => {
         console.log(err);
       });
   };
@@ -65,18 +79,32 @@ export class Orders extends Component {
     console.log(key);
 
     this.props.history.push("/orders/orderlist");
+    this.setState({ page: 0, key });
 
     if (key === "1") {
       this.refresh(allStatus);
+      this.setState({ status: allStatus });
     } else if (key === "2") {
       this.refresh(["MODERATION"]);
+      this.setState({ status: ["MODERATION"] });
     } else if (key === "3") {
       this.refresh(["OPEN"]);
+      this.setState({ status: ["OPEN"] });
     } else if (key === "4") {
       this.refresh(["IN_PROGRESS", "WAITING_FOR_CUSTOMER_RESPONSE"]);
+      this.setState({
+        status: ["IN_PROGRESS", "WAITING_FOR_CUSTOMER_RESPONSE"],
+      });
     } else if (key === "5") {
       this.refresh(["CANCELLED", "COMPLETED"]);
+      this.setState({ status: ["CANCELLED", "COMPLETED"] });
     }
+  };
+
+  changePage = (page) => {
+    this.setState({ page: page - 1 }, () => {
+      this.refresh(this.state.status);
+    });
   };
 
   render() {
@@ -92,15 +120,26 @@ export class Orders extends Component {
               <Menu
                 mode="inline"
                 defaultSelectedKeys={["1"]}
+                selectedKeys={[this.state.key]}
                 defaultOpenKeys={["sub1"]}
                 onSelect={this.onKeyChange}
                 style={{ height: "100%" }}
               >
-                <Menu.Item key="1">Все заказы</Menu.Item>
-                <Menu.Item key="2">На модерации</Menu.Item>
-                <Menu.Item key="3">Открытые</Menu.Item>
-                <Menu.Item key="4">В работе</Menu.Item>
-                <Menu.Item key="5">Завершенные</Menu.Item>
+                <Menu.Item key="1">
+                  <Link to="/orders/orderlist">Все заказы</Link>
+                </Menu.Item>
+                <Menu.Item key="2">
+                  <Link to="/orders/orderlist">На модерации</Link>
+                </Menu.Item>
+                <Menu.Item key="3">
+                  <Link to="/orders/orderlist">Открытые</Link>
+                </Menu.Item>
+                <Menu.Item key="4">
+                  <Link to="/orders/orderlist">В работе</Link>
+                </Menu.Item>
+                <Menu.Item key="5">
+                  <Link to="/orders/orderlist">Завершенные</Link>
+                </Menu.Item>
               </Menu>
             </Sider>
             <Spin spinning={this.state.spinning} tip="Подождите...">
@@ -111,21 +150,17 @@ export class Orders extends Component {
                   component={() => (
                     <OrderTable
                       dataSource={this.state.orders}
-                      refresh={() => this.refresh(allStatus)}
+                      refresh={() => this.refresh(this.state.status)}
+                      refreshSearch={this.refreshSearch}
+                      changePage={this.changePage}
                     />
                   )}
                 />
                 <Route
                   path="/orders/orderlist/:id"
                   exact
-                  component={props => {
-                    const order = this.state.orders.find(
-                      order => order.id + "" === props.match.params.id
-                    );
-                    console.log(order);
-                    console.log(props.match.params.id);
-
-                    return <OrderSingle {...props} order={order} />;
+                  component={(props) => {
+                    return <OrderSingle {...props} />;
                   }}
                 />
               </Switch>
@@ -141,7 +176,7 @@ const mapStateToProps = ({ userReducer }) => {
   return {
     loggedIn: userReducer.loggedIn,
     token: userReducer.token,
-    user: userReducer.user
+    user: userReducer.user,
   };
 };
 

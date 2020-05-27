@@ -1,6 +1,6 @@
 import moment from "moment";
 
-const getMonth = value => {
+const getMonth = (value) => {
   if (value === 0) {
     return "";
   } else if (value === 1) {
@@ -12,7 +12,7 @@ const getMonth = value => {
   }
 };
 
-const getDay = value => {
+const getDay = (value) => {
   if (value === 0) {
     return "";
   } else if (value === 1) {
@@ -24,7 +24,7 @@ const getDay = value => {
   }
 };
 
-const getYear = value => {
+const getYear = (value) => {
   if (value === 0) {
     return "";
   } else if (value === 1) {
@@ -36,15 +36,11 @@ const getYear = value => {
   }
 };
 
-export default timestamp => {
+export default (timestamp) => {
   const date1 = new Date();
-  console.log("b", timestamp);
 
   var a = moment(date1);
   var b = moment([timestamp[0], timestamp[1] - 1, timestamp[2] + 1]);
-
-  console.log("a", a);
-  console.log("b", b);
 
   var years = a.diff(b, "year");
   b.add(years, "years");
@@ -56,7 +52,8 @@ export default timestamp => {
 
   let message = `${getYear(years)}${getMonth(months)}${getDay(days)}`;
 
-  console.log("MESSAGE", message);
-
+  if (message.length === 0) {
+    message = "Сегодня";
+  }
   return message;
 };

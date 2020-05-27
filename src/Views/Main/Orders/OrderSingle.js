@@ -10,8 +10,9 @@ import {
   Tabs,
   Button,
   Popconfirm,
-  Icon
+  Icon,
 } from "antd";
+import GoogleMap, { Marker } from "react-maps-google";
 import axios from "axios";
 import getOrderStatus from "../../../utils/getOrderStatus";
 import getOrderDate from "../../../utils/getOrderDate";
@@ -21,6 +22,8 @@ import getCommunicationType from "../../../utils/getCommunicationType";
 import { UserComponent } from "../components/UserComponent";
 import { RespondList } from "../components/RespondList";
 import ReactImageGallery from "react-image-gallery";
+import sendPushNotification from "../../../utils/sendPushNotification";
+import sendPushNotificationToMasters from "../../../utils/sendPushNotificationToMasters";
 
 const { Content } = Layout;
 const { TextArea } = Input;
@@ -31,34 +34,24 @@ const url = "http://91.201.214.201:8443/";
 export class OrderSingle extends Component {
   constructor(props) {
     super(props);
-    const { order } = props;
-
     this.state = {
-      order,
-      spinning: true
+      order: "",
+      spinning: true,
     };
   }
   async componentDidMount() {
-    if (!this.state.order) {
-      this.refresh();
-    } else {
-      this.setState({ spinning: false });
-    }
+    this.refresh();
   }
 
   refresh = async () => {
+    this.setState({ spinning: true });
     const res = await axios.get(
-      `${url}api/v1/order?mode=SINGLE&order=${this.props.match.params.id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${store.getState().userReducer.token}`
-        }
-      }
+      `${url}api/v1/order?mode=SINGLE&order=${this.props.match.params.id}`
     );
-    this.setState({ spinning: false, order: res.data.orders[0] });
+    this.setState({ spinning: false, order: res.data.content[0] });
   };
 
-  updateOrderStatus = status => {
+  updateOrderStatus = (status) => {
     this.setState({ spinning: true });
 
     axios
@@ -66,28 +59,53 @@ export class OrderSingle extends Component {
         `${url}api/v1/order/${this.state.order.id}`,
         { status },
         {
-          headers: {
-            Authorization: `Bearer ${store.getState().userReducer.token}`
-          }
+          headers: {},
         }
       )
-      .then(res => {
+      .then((res) => {
         this.refresh();
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
+      });
+  };
+
+  sendNotsToMaster = () => {
+    const { order } = this.state;
+    axios
+      .get(`${url}api/v1/user/masters/${order.specialization.id}`)
+      .then((res) => {
+        let arr = [];
+        res.data.users.map((user) => {
+          arr.push(user.id);
+        });
+
+        sendPushNotificationToMasters(
+          `Заказ №${order.id} «${order.description.substring(0, 20)}${
+            order.description.length > 20 ? `...` : ``
+          }»`,
+          "Новый заказ",
+          arr,
+          "MasterListOrders",
+          order.id,
+          "master",
+          "bells"
+        );
       });
   };
 
   render() {
     const { order, spinning } = this.state;
 
+    console.log(order);
+
     const images = [];
-    order && order.images &&
+    order &&
+      order.images &&
       order.images.map((photos, index) => {
         const obj = {
           original: `http://91.201.214.201:8443/images/${photos.imageName}`,
-          thumbnail: `http://91.201.214.201:8443/images/${photos.imageName}`
+          thumbnail: `http://91.201.214.201:8443/images/${photos.imageName}`,
         };
         images.push(obj);
       });
@@ -99,7 +117,21 @@ export class OrderSingle extends Component {
             {order.status === "MODERATION" && (
               <Popconfirm
                 placement="top"
-                onConfirm={() => this.updateOrderStatus("OPEN")}
+                onConfirm={() => {
+                  this.updateOrderStatus("OPEN");
+                  sendPushNotification(
+                    `Заказ №${order.id} «${order.description.substring(0, 20)}${
+                      order.description.length > 20 ? `...` : ``
+                    }»`,
+                    "Опубликован Ваш",
+                    order.customer.id,
+                    "MyOrder",
+                    order.id,
+                    "client",
+                    "bells"
+                  );
+                  this.sendNotsToMaster();
+                }}
                 title={"Опубликовать ?"}
                 okText="Yes"
                 cancelText="No"
@@ -110,12 +142,51 @@ export class OrderSingle extends Component {
             {order.status === "OPEN" && (
               <Popconfirm
                 placement="top"
-                onConfirm={() => this.updateOrderStatus("CANCELLED")}
+                onConfirm={() => {
+                  this.updateOrderStatus("CANCELLED");
+                  sendPushNotification(
+                    `заказ №${order.id} «${order.description.substring(0, 20)}${
+                      order.description.length > 20 ? `...` : ``
+                    }»`,
+                    `Отменён`,
+                    order.customer.id,
+                    "MyOrderFinished",
+                    order.id,
+                    "client",
+                    "bells"
+                  );
+                }}
                 title={"Отменить ?"}
                 okText="Yes"
                 cancelText="No"
               >
                 <Button type="primary">Отменить</Button>
+              </Popconfirm>
+            )}
+            {(order.status === "OPEN" ||
+              order.status === "IN_PROGRESS" ||
+              order.status === "WAITING_FOR_CUSTOMER_RESPONSE") && (
+              <Popconfirm
+                placement="top"
+                onConfirm={() => {
+                  this.updateOrderStatus("COMPLETED");
+                  sendPushNotification(
+                    `заказ №${order.id} «${order.description.substring(0, 20)}${
+                      order.description.length > 20 ? `...` : ``
+                    }»`,
+                    `Завершён`,
+                    order.customer.id,
+                    "MyOrderFinished",
+                    order.id,
+                    "client",
+                    "bells"
+                  );
+                }}
+                title={"Завершить ?"}
+                okText="Yes"
+                cancelText="No"
+              >
+                <Button type="primary">Завершить</Button>
               </Popconfirm>
             )}
           </Button.Group>
@@ -205,8 +276,24 @@ export class OrderSingle extends Component {
                   </Col>
                 </Row>
               </Form>
-              {images && images.length && (
+              {order.coordinates && (
+                <GoogleMap
+                  options={{ width: 400, height: 400 }}
+                  apiKey="AIzaSyD1iFA3Aqk9D8dUkAJr_zeZ1-iP1GXq2os"
+                >
+                  <Marker
+                    position={{
+                      lat: JSON.parse(order.coordinates.toLowerCase()).latitude,
+                      lng: JSON.parse(order.coordinates.toLowerCase())
+                        .longitude,
+                    }}
+                  />
+                </GoogleMap>
+              )}
+              {images && images.length ? (
                 <ReactImageGallery items={images} />
+              ) : (
+                <span>Нет фото</span>
               )}
               <Tabs defaultActiveKey="1">
                 <TabPane tab="Отклики" key="1">
