@@ -21,17 +21,21 @@ export default (date) => {
   const locale = "ru";
   if (date) {
     if (date[0] < now.year()) {
-      return `Был в сети ${date[2]} ${months[date[1] - 1][locale]} ${
+      return `Был(а) в сети ${date[2]} ${months[date[1] - 1][locale]} ${
         date[0]
       } г.`;
     } else if (date[1] - 1 < now.month()) {
-      return `Был в сети ${date[2]} ${months[date[1] - 1][locale]}`;
+      return `Был(а) в сети ${date[2]} ${months[date[1] - 1][locale]}`;
     } else if (date[2] < now.date()) {
-      return `Был в сети ${date[2]} ${months[date[1] - 1][locale]}`;
+      return `Был(а) в сети ${date[2]} ${months[date[1] - 1][locale]}`;
     } else if (date[3] < now.hour()) {
-      return `Был в сети ${date[3]}:${date[4] > 9 ? date[4] : `0${date[4]}`}`;
+      return `Был(а) в сети ${date[3]}:${
+        date[4] > 9 ? date[4] : `0${date[4]}`
+      }`;
     } else if (date[3] === now.hour() && date[4] < now.minutes() - 2) {
-      return `Был в сети ${date[3]}:${date[4] > 9 ? date[4] : `0${date[4]}`}`;
+      return `Был(а) в сети ${date[3]}:${
+        date[4] > 9 ? date[4] : `0${date[4]}`
+      }`;
     } else if (date[3] === now.hour() && date[4] >= now.minutes() - 2) {
       return "online";
     }

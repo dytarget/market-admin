@@ -20,6 +20,7 @@ import {
 } from "antd";
 import axios from "axios";
 import { store } from "../../../store";
+import createLogs from "../../../utils/createLogs";
 
 const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
@@ -39,7 +40,7 @@ export default class AboutService extends React.Component {
   }
 
   refresh = () => {
-    const { token } = store.getState().userReducer;
+    this.cleanUp();
     this.setState({ spinning: true });
     const headers = {};
     axios
@@ -55,6 +56,13 @@ export default class AboutService extends React.Component {
       .catch((err) => {
         console.log(err);
       });
+  };
+
+  cleanUp = () => {
+    this.setState({
+      text: "",
+      id: "",
+    });
   };
 
   onChangeLogo = (info) => {
@@ -73,7 +81,11 @@ export default class AboutService extends React.Component {
     this.setState({ spinning: true, editModal: false });
     axios(authOptions)
       .then((res) => {
+        createLogs(`Создал Запись откуда Вы узнали ID=${res.data.id}`);
+
         this.refresh();
+        setTimeout(() => window.location.reload(), 1000);
+
         message.success("Успешно!");
       })
       .catch((err) => {
@@ -93,6 +105,9 @@ export default class AboutService extends React.Component {
     this.setState({ spinning: true, editModal: false });
     axios(authOptions)
       .then((res) => {
+        createLogs(`Обновил Запись откуда Вы узнали ID=${res.data.id}`);
+        setTimeout(() => window.location.reload(), 1000);
+
         this.refresh();
         message.success("Успешно!");
       })
@@ -101,7 +116,7 @@ export default class AboutService extends React.Component {
         message.error("Ошибка!");
       });
   };
-  deleteCity = (cityId) => {
+  deleteCity = (cityId, text) => {
     this.setState({ spinning: true });
 
     axios
@@ -109,7 +124,10 @@ export default class AboutService extends React.Component {
         headers: {},
       })
       .then((res) => {
+        createLogs(`Удалил Запись откуда Вы узнали ID=${text}`);
+
         this.refresh();
+        setTimeout(() => window.location.reload(), 1000);
       })
       .catch((err) => {
         console.log(err);
@@ -165,7 +183,7 @@ export default class AboutService extends React.Component {
             <Divider type="vertical" />
             <Popconfirm
               title="Вы уверены что хотите удалить?"
-              onConfirm={() => this.deleteCity(record.id)}
+              onConfirm={() => this.deleteCity(record.id, record.text)}
               okText="Да"
               cancelText="Нет"
             >
@@ -182,11 +200,12 @@ export default class AboutService extends React.Component {
         <Drawer
           title="Изменить Откуда вы узнали"
           width={720}
-          onClose={() =>
+          onClose={() => {
+            this.cleanUp();
             this.setState({
               visibleUpdate: false,
-            })
-          }
+            });
+          }}
           onOk={this.handleUpdate}
           visible={this.state.visibleUpdate}
         >
@@ -233,7 +252,10 @@ export default class AboutService extends React.Component {
           cancelText="Закрыть"
           closable={false}
           onOk={() => this.createCity()}
-          onCancel={() => this.setState({ editModal: false })}
+          onCancel={() => {
+            this.setState({ editModal: false });
+            this.cleanUp();
+          }}
         >
           <Form>
             <Form.Item label="Название">
@@ -258,7 +280,11 @@ export default class AboutService extends React.Component {
         </Button.Group>
 
         <Spin tip="Подождите..." spinning={this.state.spinning}>
-          <Table columns={columns} dataSource={this.state.aboutServices} />
+          <Table
+            columns={columns}
+            dataSource={this.state.aboutServices}
+            scroll={{ x: "calc(300px + 70%)", y: 500 }}
+          />
         </Spin>
       </Content>
     );

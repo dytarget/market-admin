@@ -16,17 +16,21 @@ import {
   message,
   Drawer,
   Divider,
-  Popconfirm
+  Popconfirm,
+  Select,
 } from "antd";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { store } from "../../../store";
 import TextArea from "antd/lib/input/TextArea";
+import createLogs from "../../../utils/createLogs";
+import { connect } from "react-redux";
+import generateCitiesId from "../../../utils/generateCitiesId";
 
 const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
-export default class SidePromos extends React.Component {
+class SidePromos extends React.Component {
   state = {
     promos: [],
     spinning: false,
@@ -34,10 +38,12 @@ export default class SidePromos extends React.Component {
     editModal2: false,
     master: [],
     customer: [],
+    markets: [],
     image: "",
     link: "",
+    forWhom: "",
+    promoMarketId: "",
     visibleUpdate: false,
-    forWhom: ""
   };
 
   componentDidMount() {
@@ -45,50 +51,62 @@ export default class SidePromos extends React.Component {
   }
 
   refresh = () => {
-    const { token } = store.getState().userReducer;
+    this.cleanUp();
     this.setState({ spinning: true });
     const headers = {};
     axios
-      .get(`${url}api/v1/promo`, {
-        headers
+      .get(`${url}api/v1/promo${generateCitiesId(true)}`, {
+        headers,
       })
-      .then(res => {
+      .then((res) => {
         const result = res.data.filter(
-          pr => pr.type === "SIDE" && pr.displayType === "MASTER"
+          (pr) => pr.type === "SIDE" && pr.displayType === "MASTER"
         );
         const result2 = res.data.filter(
-          pr => pr.type === "SIDE" && pr.displayType === "CUSTOMER"
+          (pr) => pr.type === "SIDE" && pr.displayType === "CUSTOMER"
         );
-        this.setState({ spinning: false, master: result, customer: result2 });
+        this.setState({
+          spinning: false,
+          master: result,
+          customer: result2,
+        });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
+    axios
+      .get(`${url}api/v1/market`)
+      .then((res) => this.setState({ markets: res.data.markets }));
   };
-  onChangeLogo = info => {
+  onChangeLogo = (info) => {
     this.setState({ image: info.file.originFileObj });
   };
 
-  createPromo = value => {
+  cleanUp = () => {
+    this.setState({
+      image: "",
+      link: "",
+      forWhom: "",
+      promoMarketId: "",
+    });
+  };
+
+  createPromo = (value) => {
     this.setState({
       editModal: false,
       editModal2: false,
-      spinning: true
+      spinning: true,
     });
     const { token } = store.getState().userReducer;
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
 
     axios
       .post(
-        `${url}api/v1/promo?link=${this.state.link}&type=SIDE&displayType=${this.state.forWhom}`,
-        {},
-        {
-          headers
-        }
+        `${url}api/v1/promo?link=${this.state.link}&type=SIDE&marketId=${this.state.promoMarketId}&displayType=${this.state.forWhom}`,
+        {}
       )
-      .then(res => {
+      .then((res) => {
+        createLogs(`Создал Боковой Баннер ID=${res.data.id}`);
+
         const file = new FormData();
         console.log(this.state.image);
 
@@ -99,35 +117,33 @@ export default class SidePromos extends React.Component {
           url: `${url}api/v1/image/promo/${res.data.id}`,
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data"
+            "Content-Type": "multipart/form-data",
           },
-          data: file
+          data: file,
         };
         axios(authOptions2).then(() => {
           this.refresh();
+          setTimeout(() => window.location.reload(), 1000);
+
           message.success("Успешно!");
         });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
 
-  deletePromos = id => {
+  deletePromos = (id) => {
     const { token } = store.getState().userReducer;
-    const headers = {
-      Authorization: `Bearer ${token}`
-    };
 
     axios
-      .delete(`${url}api/v1/promo/${id}`, {
-        headers
-      })
-      .then(() => {
+      .delete(`${url}api/v1/promo/${id}`)
+      .then((res) => {
+        createLogs(`Удалил Боковой Баннер ID=${id}`);
         this.refresh();
         message.success("Успешно!");
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
       });
   };
@@ -137,13 +153,13 @@ export default class SidePromos extends React.Component {
       {
         title: "ID",
         dataIndex: "id",
-        key: "id"
+        key: "id",
       },
       {
         title: "Баннер",
         dataIndex: "image",
         key: "image",
-        render: image => (
+        render: (image) => (
           <img
             width={300}
             height={200}
@@ -154,73 +170,111 @@ export default class SidePromos extends React.Component {
             }
             alt=""
           />
-        )
+        ),
+      },
+      {
+        title: "ID Продавца",
+        dataIndex: "marketId",
+        key: "marketId",
+        render: (marketId) => (
+          <Link to={`/users/markets/${marketId}`}>{marketId}</Link>
+        ),
       },
       {
         title: "Ссылка",
         dataIndex: "link",
         key: "link",
-        render: link => (
+        render: (link) => (
           <Link style={{ width: 300 }} onClick={() => window.open(link)}>
             <span>{link && link.substring(0, 10)}...</span>
           </Link>
-        )
+        ),
       },
       {
         title: "Просмотры",
         dataIndex: "viewCount",
-        key: "viewCount"
+        key: "viewCount",
       },
       {
         title: "Обновлён",
         dataIndex: "lastUpdated",
         key: "lastUpdated",
-        render: lastUpdated => (
-          <span>
-            {lastUpdated[2]}/{lastUpdated[1]}/{lastUpdated[0]}
-          </span>
-        )
+        render: (lastUpdated) =>
+          lastUpdated && (
+            <span>
+              {lastUpdated[2]}/{lastUpdated[1]}/{lastUpdated[0]}
+            </span>
+          ),
       },
       {
         title: "Действия",
         key: "action",
-        render: (text, record) => (
-          <span>
-            <Popconfirm
-              title="Вы уверены что хотите удалить?"
-              onConfirm={() => this.deletePromos(record.id)}
-              okText="Да"
-              cancelText="Нет"
-            >
-              <a>Удалить</a>
-            </Popconfirm>
-          </span>
-        )
-      }
+        render: (text, record) =>
+          this.props.canDeleteOutcome && (
+            <span>
+              <Popconfirm
+                title="Вы уверены что хотите удалить?"
+                onConfirm={() => this.deletePromos(record.id)}
+                okText="Да"
+                cancelText="Нет"
+              >
+                <a>Удалить</a>
+              </Popconfirm>
+            </span>
+          ),
+      },
     ];
 
     const props = {
       name: "file",
       action: "https://www.mocky.io/v2/5cc8019d300000980a055e76",
       headers: {
-        authorization: "authorization-text"
-      }
+        authorization: "authorization-text",
+      },
     };
     return (
       <Content style={{ padding: "0 24px", minHeight: 280 }}>
-        <h2 style={{ textAlign: "center" }}>Боковые рекламы для Мастеров</h2>
+        <h2 style={{ textAlign: "center" }}>Боковые баннеры для Мастеров</h2>
         <Modal
-          title="Создать боковую рекламу"
+          title="Создать боковой баннер"
           visible={this.state.editModal}
           okText="Создать"
           cancelText="Закрыть"
           closable={false}
           onOk={() => this.createPromo("side")}
-          onCancel={() => this.setState({ editModal: false })}
+          onCancel={() => {
+            this.setState({ editModal: false });
+            this.cleanUp();
+          }}
         >
           <Form>
-            <Form.Item label="Переходная ссылка(http://... или https://...) или Id Маркета(Пример: 12)">
-              <Input onChange={e => this.setState({ link: e.target.value })} />
+            <Form.Item label="Продавец">
+              <Select
+                onChange={(e) => {
+                  this.setState({ promoMarketId: e });
+                }}
+                type="text"
+              >
+                {this.state.markets.map((market) => {
+                  if (
+                    this.props.userReducer.user.isSuperAdmin ||
+                    this.props.userReducer.user.cities.includes(market.city.id)
+                  ) {
+                    console.log("SHOW UP");
+
+                    return (
+                      <Select.Option value={market.id}>
+                        {market.marketName}
+                      </Select.Option>
+                    );
+                  }
+                })}
+              </Select>
+            </Form.Item>
+            <Form.Item label="Переходная ссылка(http://... или https://...)">
+              <Input
+                onChange={(e) => this.setState({ link: e.target.value })}
+              />
             </Form.Item>
 
             <Form.Item label="Баннер">
@@ -238,35 +292,39 @@ export default class SidePromos extends React.Component {
             <Icon type="reload" />
             Обновить
           </Button>
-          <Button
-            onClick={() =>
-              this.setState({
-                editModal: true,
-                forWhom: "MASTER"
-              })
-            }
-            type="primary"
-          >
-            <Icon type="plus" />
-            Добавить рекламу для Мастера
-          </Button>
-          <Button
-            onClick={() =>
-              this.setState({
-                editModal: true,
-                forWhom: "CUSTOMER"
-              })
-            }
-            type="primary"
-          >
-            <Icon type="plus" />
-            Добавить рекламу для Заказчика
-          </Button>
+          {this.props.canEditOutcome && (
+            <>
+              <Button
+                onClick={() =>
+                  this.setState({
+                    editModal: true,
+                    forWhom: "MASTER",
+                  })
+                }
+                type="primary"
+              >
+                <Icon type="plus" />
+                Добавить баннер для Мастера
+              </Button>
+              <Button
+                onClick={() =>
+                  this.setState({
+                    editModal: true,
+                    forWhom: "CUSTOMER",
+                  })
+                }
+                type="primary"
+              >
+                <Icon type="plus" />
+                Добавить баннер для Заказчика
+              </Button>
+            </>
+          )}
         </Button.Group>
         <Spin tip="Подождите..." spinning={this.state.spinning}>
           <Table columns={columns} dataSource={this.state.master} />
           <h2 style={{ textAlign: "center" }}>
-            Боковые рекламы для Заказчиков
+            Боковые баннеры для Заказчиков
           </h2>
           <Table columns={columns} dataSource={this.state.customer} />
         </Spin>
@@ -274,3 +332,5 @@ export default class SidePromos extends React.Component {
     );
   }
 }
+
+export default connect(({ userReducer }) => ({ userReducer }), {})(SidePromos);

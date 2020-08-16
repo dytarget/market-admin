@@ -1,22 +1,15 @@
 import axios from "axios";
-import { store } from "../store";
 
 const url = "http://91.201.214.201:8443";
 
 const sendPushNotificationToAll = (
   body,
+  bodyKz,
   title,
-  userId,
-  screen,
-  itemId,
+  titleKz,
   mode,
-  type,
-  clientModal,
-  masterModal,
-  clientId,
-  masterId
+  type
 ) => {
-  const { token } = store.getState().userReducer;
   const pushBody = {
     userIds: [],
     title,
@@ -24,13 +17,13 @@ const sendPushNotificationToAll = (
     body,
     data: {
       additionalProp1: {
-        screen,
         title,
         body,
+        bodyKz,
+        titleKz,
         type,
         mode,
       },
-      additionalProp2: { itemId, clientModal, masterModal, clientId, masterId },
     },
   };
 

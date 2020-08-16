@@ -6,28 +6,25 @@ import {
   Button,
   Layout,
   Spin,
-  Avatar,
   Input,
   Form,
   Modal,
-  Col,
-  Row,
   Upload,
   message,
-  Drawer,
-  Divider,
   Popconfirm,
   Select,
 } from "antd";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { store } from "../../../store";
-import TextArea from "antd/lib/input/TextArea";
+import createLogs from "../../../utils/createLogs";
+import { connect } from "react-redux";
+import generateCitiesId from "../../../utils/generateCitiesId";
 
 const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
-export default class PromosTable extends React.Component {
+class PromosTable extends React.Component {
   state = {
     promos: [],
     markets: [],
@@ -38,8 +35,8 @@ export default class PromosTable extends React.Component {
     link: "",
     promoMasterImage: "",
     marketLink: "",
-    visibleUpdate: false,
     displayType: "",
+    visibleUpdate: false,
     editModalMarket: false,
   };
 
@@ -47,12 +44,22 @@ export default class PromosTable extends React.Component {
     this.refresh();
   }
 
+  cleanUp = () => {
+    this.setState({
+      image: "",
+      link: "",
+      promoMasterImage: "",
+      marketLink: "",
+      displayType: "",
+    });
+  };
+
   refresh = () => {
-    const { token } = store.getState().userReducer;
+    this.cleanUp();
     this.setState({ spinning: true });
     const headers = {};
     axios
-      .get(`${url}api/v1/promo`, {
+      .get(`${url}api/v1/promo${generateCitiesId(true)}`, {
         headers,
       })
       .then((res) => {
@@ -83,18 +90,19 @@ export default class PromosTable extends React.Component {
       editModal2: false,
       spinning: true,
     });
-    const { token } = store.getState().userReducer;
     const headers = {};
 
     axios
       .post(
-        `${url}api/v1/promo?link=${this.state.link}&type=ORDER&displayType=${this.state.displayType}`,
+        `${url}api/v1/promo?link=${this.state.link}&type=ORDER&marketId=${this.state.promoMarketId}&displayType=${this.state.displayType}`,
         {},
         {
           headers,
         }
       )
       .then((res) => {
+        createLogs(`Создал Баннер ID=${res.data.id}`);
+
         const file = new FormData();
         console.log(this.state.image);
 
@@ -110,6 +118,8 @@ export default class PromosTable extends React.Component {
         };
         axios(authOptions2).then(() => {
           this.refresh();
+          setTimeout(() => window.location.reload(), 1000);
+
           message.success("Успешно!");
         });
       })
@@ -131,6 +141,8 @@ export default class PromosTable extends React.Component {
       )
       .then((res) => {
         console.log(res.data);
+        createLogs(`Создал Баннер ID=${res.data.id}`);
+
         const files = new FormData();
         files.append("file", this.state.promoMasterImage);
         axios
@@ -141,6 +153,7 @@ export default class PromosTable extends React.Component {
           })
           .then((res) => {
             this.refresh();
+            setTimeout(() => window.location.reload(), 1000);
           })
           .catch((err) => {
             console.log(err);
@@ -152,16 +165,15 @@ export default class PromosTable extends React.Component {
   };
 
   deletePromos = (id) => {
-    const { token } = store.getState().userReducer;
-    const headers = {
-      // Authorization: `Bearer ${token}`
-    };
+    const headers = {};
 
     axios
       .delete(`${url}api/v1/promo/${id}`, {
         headers,
       })
-      .then(() => {
+      .then((res) => {
+        createLogs(`Удалил Баннер ID=${id}`);
+
         this.refresh();
         message.success("Успешно!");
       })
@@ -181,6 +193,7 @@ export default class PromosTable extends React.Component {
         title: "Баннер",
         dataIndex: "image",
         key: "image",
+        width: 250,
         render: (image) => (
           <img
             width={230}
@@ -211,17 +224,16 @@ export default class PromosTable extends React.Component {
         dataIndex: "type",
         key: "type",
         render: (type) => {
-          const data = {
-            MARKET: "Маркет",
-            ORDER: "Лента",
-          };
-          return <span>{data[type]}</span>;
+          return <span>В заказах</span>;
         },
       },
       {
-        title: "ID Маркета",
+        title: "ID Продавца",
         dataIndex: "marketId",
         key: "marketId",
+        render: (marketId) => (
+          <Link to={`/users/markets/${marketId}`}>{marketId}</Link>
+        ),
       },
       {
         title: "Просмотры",
@@ -251,9 +263,10 @@ export default class PromosTable extends React.Component {
       {
         title: "Действия",
         key: "action",
-        render: (text, record) => (
-          <span>
-            {/* <a
+        render: (text, record) =>
+          this.props.canDeleteOutcome && (
+            <span>
+              {/* <a
               onClick={() => {
                 this.setState({
                   visibleUpdate: true,
@@ -266,16 +279,16 @@ export default class PromosTable extends React.Component {
               Изменить
             </a>
             <Divider type="vertical" /> */}
-            <Popconfirm
-              title="Вы уверены что хотите удалить?"
-              onConfirm={() => this.deletePromos(record.id)}
-              okText="Да"
-              cancelText="Нет"
-            >
-              <a>Удалить</a>
-            </Popconfirm>
-          </span>
-        ),
+              <Popconfirm
+                title="Вы уверены что хотите удалить?"
+                onConfirm={() => this.deletePromos(record.id)}
+                okText="Да"
+                cancelText="Нет"
+              >
+                <a>Удалить</a>
+              </Popconfirm>
+            </span>
+          ),
       },
     ];
 
@@ -286,9 +299,10 @@ export default class PromosTable extends React.Component {
         authorization: "authorization-text",
       },
     };
+
     return (
       <Content style={{ padding: "0 24px", minHeight: 280 }}>
-        <h2 style={{ textAlign: "center" }}>Список реклам в ленте заказов</h2>
+        <h2 style={{ textAlign: "center" }}>Список баннеров в ленте заказов</h2>
         {/* <Drawer
           title="Изменить рекламу"
           width={720}
@@ -358,15 +372,41 @@ export default class PromosTable extends React.Component {
           </div>
         </Drawer> */}
         <Modal
-          title="Создать рекламу"
+          title="Создать баннер"
           visible={this.state.editModal}
           okText="Создать"
           cancelText="Закрыть"
           closable={false}
           onOk={() => this.createPromo("ORDER")}
-          onCancel={() => this.setState({ editModal: false })}
+          onCancel={() => {
+            this.setState({ editModal: false });
+            this.cleanUp();
+          }}
         >
           <Form>
+            <Form.Item label="Продавец">
+              <Select
+                onChange={(e) => {
+                  this.setState({ promoMarketId: e });
+                }}
+                type="text"
+              >
+                {this.state.markets.map((market) => {
+                  if (
+                    this.props.userReducer.user.isSuperAdmin ||
+                    this.props.userReducer.user.cities.includes(market.city.id)
+                  ) {
+                    console.log("SHOW UP");
+
+                    return (
+                      <Select.Option value={market.id}>
+                        {market.marketName}
+                      </Select.Option>
+                    );
+                  }
+                })}
+              </Select>
+            </Form.Item>
             <Form.Item label="Переходная ссылка(http://... или https://...)">
               <Input
                 onChange={(e) => this.setState({ link: e.target.value })}
@@ -385,16 +425,19 @@ export default class PromosTable extends React.Component {
         </Modal>
 
         <Modal
-          title="Создать рекламу с привязкой Маркета"
+          title="Создать баннер с привязкой Продавца"
           visible={this.state.editModalMarket}
           okText="Создать"
           cancelText="Закрыть"
           closable={false}
           onOk={this.createMarketPromo}
-          onCancel={() => this.setState({ editModalMarket: false })}
+          onCancel={() => {
+            this.setState({ editModalMarket: false });
+            this.cleanUp();
+          }}
         >
           <Form>
-            <Form.Item label="Маркет">
+            <Form.Item label="Продавец">
               <Select
                 onChange={(e) => {
                   this.setState({ promoMarketId: e });
@@ -402,11 +445,18 @@ export default class PromosTable extends React.Component {
                 type="text"
               >
                 {this.state.markets.map((market) => {
-                  return (
-                    <Select.Option value={market.id}>
-                      {market.marketName}
-                    </Select.Option>
-                  );
+                  if (
+                    this.props.userReducer.user.isSuperAdmin ||
+                    this.props.userReducer.user.cities.includes(market.city.id)
+                  ) {
+                    console.log("SHOW UP");
+
+                    return (
+                      <Select.Option value={market.id}>
+                        {market.marketName}
+                      </Select.Option>
+                    );
+                  }
                 })}
               </Select>
             </Form.Item>
@@ -434,78 +484,50 @@ export default class PromosTable extends React.Component {
           </Form>
         </Modal>
 
-        <Button.Group>
+        <Button.Group style={{ marginTop: 10, marginBottom: 10 }}>
           <Button onClick={this.refresh} type="primary">
             <Icon type="reload" />
             Обновить
           </Button>
-          <Button
-            onClick={() =>
-              this.setState({
-                editModal: true,
-                displayType: "CUSTOMER",
-              })
-            }
-            type="primary"
-          >
-            <Icon type="plus" />
-            Добавить рекламу в заказах для Заказчика
-          </Button>
-          <Button
-            onClick={() =>
-              this.setState({
-                editModal: true,
-                displayType: "MASTER",
-              })
-            }
-            type="primary"
-          >
-            <Icon type="plus" />
-            Добавить рекламу в заказах для Мастера
-          </Button>
-          {/* <Button
-            onClick={() => this.setState({ editModal2: true })}
-            type="primary"
-          >
-            <Icon type="plus" />
-            Добавить боковую рекламу
-          </Button> */}
-        </Button.Group>
-
-        <Button.Group style={{ marginTop: 10, marginBottom: 10 }}>
-          <Button
-            onClick={() =>
-              this.setState({
-                editModalMarket: true,
-                displayTypeMarket: "MASTER",
-              })
-            }
-            type="primary"
-          >
-            <Icon type="plus" />
-            Добавить рекламу для Мастера с привязкой к Маркету
-          </Button>
-          <Button
-            onClick={() =>
-              this.setState({
-                editModalMarket: true,
-                displayTypeMarket: "CUSTOMER",
-              })
-            }
-            type="primary"
-          >
-            <Icon type="plus" />
-            Добавить рекламу для Заказчика с привязкой к Маркету
-          </Button>
+          {this.props.canEditOutcome && (
+            <>
+              <Button
+                onClick={() =>
+                  this.setState({
+                    editModalMarket: true,
+                    displayTypeMarket: "MASTER",
+                  })
+                }
+                type="primary"
+              >
+                <Icon type="plus" />
+                Добавить баннер для Мастера
+              </Button>
+              <Button
+                onClick={() =>
+                  this.setState({
+                    editModalMarket: true,
+                    displayTypeMarket: "CUSTOMER",
+                  })
+                }
+                type="primary"
+              >
+                <Icon type="plus" />
+                Добавить баннер для Заказчика
+              </Button>
+            </>
+          )}
         </Button.Group>
         <Spin tip="Подождите..." spinning={this.state.spinning}>
           <Table
             columns={columns}
             dataSource={this.state.promos}
-            scroll={{ x: true }}
+            scroll={{ x: "calc(700px + 50%)", y: 480 }}
           />
         </Spin>
       </Content>
     );
   }
 }
+
+export default connect(({ userReducer }) => ({ userReducer }), {})(PromosTable);

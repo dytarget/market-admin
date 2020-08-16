@@ -20,6 +20,7 @@ import {
 } from "antd";
 import axios from "axios";
 import { store } from "../../../store";
+import createLogs from "../../../utils/createLogs";
 
 const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
@@ -44,7 +45,8 @@ export default class Cities extends React.Component {
   }
 
   refresh = () => {
-    const { token } = store.getState().userReducer;
+    this.cleanUp();
+
     this.setState({ spinning: true });
     const headers = {};
     axios
@@ -52,7 +54,10 @@ export default class Cities extends React.Component {
         headers,
       })
       .then((res) => {
-        this.setState({ spinning: false, cities: res.data.cities });
+        this.setState({
+          spinning: false,
+          cities: res.data.cities,
+        });
       })
       .catch((err) => {
         console.log(err);
@@ -63,11 +68,17 @@ export default class Cities extends React.Component {
     this.setState({ image: info.file.originFileObj });
   };
 
+  cleanUp = () => {
+    this.setState({
+      cityName: "",
+      cityNameKz: "",
+    });
+  };
+
   createCity = () => {
     console.log(this.state.cityName);
     console.log(this.state.cityNameKz);
 
-    const { token } = store.getState().userReducer;
     const authOptions = {
       method: "POST",
       url: `${url}api/v1/super/city`,
@@ -82,7 +93,11 @@ export default class Cities extends React.Component {
     this.setState({ spinning: true, editModal: false });
     axios(authOptions)
       .then((res) => {
+        createLogs(`Создал Город ID=${res.data.id}`);
+        this.cleanUp();
         this.refresh();
+        setTimeout(() => window.location.reload(), 1000);
+
         message.success("Успешно!");
       })
       .catch((err) => {
@@ -92,7 +107,6 @@ export default class Cities extends React.Component {
   };
 
   handleUpdate = () => {
-    const { token } = store.getState().userReducer;
     const authOptions = {
       method: "PATCH",
       url: `${url}api/v1/super/city/${this.state.id}`,
@@ -106,6 +120,10 @@ export default class Cities extends React.Component {
     this.setState({ spinning: true, editModal: false });
     axios(authOptions)
       .then((res) => {
+        createLogs(`Обновил Город ID=${res.data.id}`);
+        this.cleanUp();
+        setTimeout(() => window.location.reload(), 1000);
+
         this.refresh();
         message.success("Успешно!");
       })
@@ -114,7 +132,7 @@ export default class Cities extends React.Component {
         message.error("Ошибка!");
       });
   };
-  deleteCity = (cityId) => {
+  deleteCity = (cityId, name) => {
     this.setState({ spinning: true });
 
     axios
@@ -122,6 +140,9 @@ export default class Cities extends React.Component {
         headers: {},
       })
       .then((res) => {
+        createLogs(`Удалил Город ID=${name}`);
+        setTimeout(() => window.location.reload(), 1000);
+
         this.refresh();
       })
       .catch((err) => {
@@ -184,7 +205,7 @@ export default class Cities extends React.Component {
             <Divider type="vertical" />
             <Popconfirm
               title="Вы уверены что хотите удалить?"
-              onConfirm={() => this.deleteCity(record.id)}
+              onConfirm={() => this.deleteCity(record.id, record.cityName)}
               okText="Да"
               cancelText="Нет"
             >
@@ -201,11 +222,12 @@ export default class Cities extends React.Component {
         <Drawer
           title="Изменить город"
           width={720}
-          onClose={() =>
+          onClose={() => {
+            this.cleanUp();
             this.setState({
               visibleUpdate: false,
-            })
-          }
+            });
+          }}
           onOk={this.handleUpdate}
           visible={this.state.visibleUpdate}
         >
@@ -216,7 +238,9 @@ export default class Cities extends React.Component {
                   <Input
                     value={this.state.cityNameKz}
                     onChange={(e) =>
-                      this.setState({ cityNameKz: e.target.value })
+                      this.setState({
+                        cityNameKz: e.target.value,
+                      })
                     }
                     type="text"
                   />
@@ -267,7 +291,10 @@ export default class Cities extends React.Component {
           cancelText="Закрыть"
           closable={false}
           onOk={() => this.createCity()}
-          onCancel={() => this.setState({ editModal: false })}
+          onCancel={() => {
+            this.setState({ editModal: false });
+            this.cleanUp();
+          }}
         >
           <Form>
             <Form.Item label="Название на KZ">
@@ -298,7 +325,11 @@ export default class Cities extends React.Component {
         </Button.Group>
 
         <Spin tip="Подождите..." spinning={this.state.spinning}>
-          <Table columns={columns} dataSource={this.state.cities} />
+          <Table
+            columns={columns}
+            dataSource={this.state.cities}
+            scroll={{ x: "calc(600px + 70%)", y: 500 }}
+          />
         </Spin>
       </Content>
     );

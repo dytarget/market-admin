@@ -1,10 +1,12 @@
 import React, { Component } from "react";
-import { Table, Button, Spin, Select } from "antd";
+import { Table, Button, Spin, Select, ConfigProvider, DatePicker } from "antd";
 import { connect } from "react-redux";
 import Axios from "axios";
 import moment from "moment";
-
+import locale from "antd/es/locale/ru_RU";
+import "moment/locale/ru";
 import config from "../../../config/config";
+import generateCitiesId from "../../../utils/generateCitiesId";
 
 const { Option } = Select;
 
@@ -66,7 +68,9 @@ export class UserActivityStatistics extends Component {
     this.setState({ spinning: true });
     const { from, to, type } = this.state;
     Axios.get(
-      `${url}api/v1/admin/report/activity/days?from=${from}&to=${to}&type=${type}`
+      `${url}api/v1/admin/report/activity/days?from=${from}&to=${to}&type=${type}${generateCitiesId(
+        false
+      )}`
     ).then((res) => {
       console.log(res.data);
 
@@ -78,7 +82,13 @@ export class UserActivityStatistics extends Component {
   };
 
   generateExcel = () => {
-    window.open(`${urlNode}statistic_excel_file/responds_file`);
+    window.open(
+      `${urlNode}statistic_excel_file/active?from=${this.state.from}&to=${
+        this.state.to
+      }&type=${this.state.type}&citiesQuery=${encodeURIComponent(
+        generateCitiesId(false)
+      )}`
+    );
   };
 
   handleChange = (value) => {
@@ -98,6 +108,25 @@ export class UserActivityStatistics extends Component {
             <Option value="CUSTOMER">Заказчики</Option>
             <Option value="MASTER">Мастера</Option>
           </Select>
+          <ConfigProvider locale={locale}>
+            <DatePicker.RangePicker
+              style={{ marginRight: 10 }}
+              locale={locale}
+              defaultValue={[
+                moment(this.state.from, "YYYY-MM-DD"),
+                moment(this.state.to, "YYYY-MM-DD"),
+              ]}
+              onChange={(value) => {
+                this.setState(
+                  {
+                    from: value[0].format("YYYY-MM-DD"),
+                    to: value[1].format("YYYY-MM-DD"),
+                  },
+                  () => this.refresh()
+                );
+              }}
+            />
+          </ConfigProvider>
           <Button onClick={this.generateExcel} type="primary">
             Выгрузить в excel
           </Button>

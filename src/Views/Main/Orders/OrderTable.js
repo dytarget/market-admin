@@ -23,17 +23,19 @@ export const OrderTable = ({
   };
 
   return (
-    <Content style={{ padding: "0 24px", minHeight: 280 }}>
-      <Button.Group>
-        <Button onClick={refresh} type="primary">
-          <Icon type="reload" />
-          Обновить
-        </Button>
-      </Button.Group>
+    <Content style={{ minHeight: 280, maxWidth: "95%" }}>
+      <div style={{ paddingLeft: 24 }} className="order-table-top">
+        <Button.Group>
+          <Button onClick={refresh} type="primary">
+            <Icon type="reload" />
+            Обновить
+          </Button>
+        </Button.Group>
 
-      <SearchComponent search={refreshSearch} />
+        <SearchComponent search={refreshSearch} />
 
-      <h2 style={{ textAlign: "center" }}>Список заказов</h2>
+        <h2 style={{ textAlign: "center" }}>Список заказов</h2>
+      </div>
 
       <Table
         columns={columns}

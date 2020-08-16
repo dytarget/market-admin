@@ -1,11 +1,11 @@
 const types = {
-  VERIFIED: "Проврен",
+  VERIFIED: "Проверен",
   NOT_VERIFIED: "Не проверен",
   D0C_VERIFIED: "Документ проврен",
   DOC_NOT_VERIFIED: "Документ не проверен",
-  BLOCKED: 'Заблокирован'
+  BLOCKED: "Заблокирован",
 };
 
-export default type => {
+export default (type) => {
   return types[type];
 };

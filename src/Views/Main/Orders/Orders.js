@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import { Layout, Menu, Breadcrumb, Icon, Spin } from "antd";
 import { connect } from "react-redux";
 import axios from "axios";
-import { store } from "../../../store";
 import { Switch, Route, Link } from "react-router-dom";
 import { OrderTable } from "./OrderTable";
 import OrderSingle from "./OrderSingle";
@@ -19,7 +18,7 @@ const allStatus = [
 
 const url = "http://91.201.214.201:8443/";
 
-export class Orders extends Component {
+class Orders extends Component {
   constructor(props) {
     super(props);
     console.log("PROPS", props);
@@ -40,39 +39,59 @@ export class Orders extends Component {
   }
 
   refresh = (status) => {
-    this.setState({ spinning: true });
+    const user = this.props.userReducer.user;
 
-    let statuses = "";
-    status.map((item) => (statuses += `status=${item}&`));
-    axios
-      .get(
-        `${url}api/v1/order?mode=ALL&${statuses.substring(
-          0,
-          statuses.lastIndexOf("&")
-        )}&orderBy=CREATED&direction=DESC&page=${this.state.page}`
-      )
-      .then((res) => {
-        this.setState({ spinning: false, orders: res.data });
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    if (user && user.userRights && user.userRights.canLookOrder === true) {
+      this.setState({ spinning: true });
+
+      let cities = "";
+
+      if (
+        !this.props.userReducer.user.isSuperAdmin &&
+        this.props.userReducer.user.cities
+      ) {
+        this.props.userReducer.user.cities.forEach((city) => {
+          cities += `city=${city}&`;
+        });
+
+        cities = "&" + cities.substring(0, cities.lastIndexOf("&"));
+      }
+
+      let statuses = "";
+      status.map((item) => (statuses += `status=${item}&`));
+      axios
+        .get(
+          `${url}api/v1/order?mode=ALL&${statuses.substring(
+            0,
+            statuses.lastIndexOf("&")
+          )}&orderBy=CREATED&direction=DESC&page=${this.state.page}${cities}`
+        )
+        .then((res) => {
+          this.setState({ spinning: false, orders: res.data });
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
   };
 
   refreshSearch = (type, text) => {
-    this.setState({ spinning: true, key: "1", status: allStatus });
-    axios
-      .get(`${url}api/v1/order/search?param=${type}&q=${text}`)
-      .then((res) => {
-        console.log(
-          `${url}api/v1/order/search?param=${type}&q=${text}`,
-          res.data
-        );
-        this.setState({ spinning: false, orders: res.data });
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    const user = this.props.userReducer.user;
+    if (user && user.userRights && user.userRights.canLookOrder === true) {
+      this.setState({ spinning: true, key: "1", status: allStatus });
+      axios
+        .get(`${url}api/v1/order/search?param=${type}&q=${text}`)
+        .then((res) => {
+          console.log(
+            `${url}api/v1/order/search?param=${type}&q=${text}`,
+            res.data
+          );
+          this.setState({ spinning: false, orders: res.data });
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
   };
 
   onKeyChange = ({ key }) => {
@@ -108,76 +127,71 @@ export class Orders extends Component {
   };
 
   render() {
+    console.log("USSEERR", this.props);
+
     return (
-      <div>
-        <Content style={{ padding: "0 50px" }}>
-          <Breadcrumb style={{ margin: "16px 0" }}>
-            <Breadcrumb.Item>Заказы</Breadcrumb.Item>
-            <Breadcrumb.Item>Все Заказы</Breadcrumb.Item>
-          </Breadcrumb>
-          <Layout style={{ padding: "24px 0", background: "#fff" }}>
-            <Sider width={200} style={{ background: "#fff" }}>
-              <Menu
-                mode="inline"
-                defaultSelectedKeys={["1"]}
-                selectedKeys={[this.state.key]}
-                defaultOpenKeys={["sub1"]}
-                onSelect={this.onKeyChange}
-                style={{ height: "100%" }}
-              >
-                <Menu.Item key="1">
-                  <Link to="/orders/orderlist">Все заказы</Link>
-                </Menu.Item>
-                <Menu.Item key="2">
-                  <Link to="/orders/orderlist">На модерации</Link>
-                </Menu.Item>
-                <Menu.Item key="3">
-                  <Link to="/orders/orderlist">Открытые</Link>
-                </Menu.Item>
-                <Menu.Item key="4">
-                  <Link to="/orders/orderlist">В работе</Link>
-                </Menu.Item>
-                <Menu.Item key="5">
-                  <Link to="/orders/orderlist">Завершенные</Link>
-                </Menu.Item>
-              </Menu>
-            </Sider>
-            <Spin spinning={this.state.spinning} tip="Подождите...">
-              <Switch>
-                <Route
-                  path="/orders/orderlist"
-                  exact
-                  component={() => (
-                    <OrderTable
-                      dataSource={this.state.orders}
-                      refresh={() => this.refresh(this.state.status)}
-                      refreshSearch={this.refreshSearch}
-                      changePage={this.changePage}
-                    />
-                  )}
-                />
-                <Route
-                  path="/orders/orderlist/:id"
-                  exact
-                  component={(props) => {
-                    return <OrderSingle {...props} />;
-                  }}
-                />
-              </Switch>
-            </Spin>
-          </Layout>
-        </Content>
-      </div>
+      <Content style={{ padding: "0 50px", boxSizing: "border-box" }}>
+        <Breadcrumb style={{ margin: "16px 0" }}>
+          <Breadcrumb.Item>Заказы</Breadcrumb.Item>
+          <Breadcrumb.Item>Все Заказы</Breadcrumb.Item>
+        </Breadcrumb>
+        <Layout
+          style={{ padding: "24px 0", background: "#fff" }}
+          className="layout"
+        >
+          <Sider className="sider" style={{ background: "#fff" }}>
+            <Menu
+              mode="inline"
+              defaultSelectedKeys={["1"]}
+              selectedKeys={[this.state.key]}
+              defaultOpenKeys={["sub1"]}
+              onSelect={this.onKeyChange}
+              style={{ height: "100%" }}
+            >
+              <Menu.Item key="1">
+                <Link to="/orders/orderlist">Все заказы</Link>
+              </Menu.Item>
+              <Menu.Item key="2">
+                <Link to="/orders/orderlist">На модерации</Link>
+              </Menu.Item>
+              <Menu.Item key="3">
+                <Link to="/orders/orderlist">Открытые</Link>
+              </Menu.Item>
+              <Menu.Item key="4">
+                <Link to="/orders/orderlist">В работе</Link>
+              </Menu.Item>
+              <Menu.Item key="5">
+                <Link to="/orders/orderlist">Завершенные</Link>
+              </Menu.Item>
+            </Menu>
+          </Sider>
+          <Spin spinning={this.state.spinning} tip="Подождите...">
+            <Switch>
+              <Route
+                path="/orders/orderlist"
+                exact
+                component={() => (
+                  <OrderTable
+                    dataSource={this.state.orders}
+                    refresh={() => this.refresh(this.state.status)}
+                    refreshSearch={this.refreshSearch}
+                    changePage={this.changePage}
+                  />
+                )}
+              />
+              <Route
+                path="/orders/orderlist/:id"
+                exact
+                component={(props) => {
+                  return <OrderSingle {...props} />;
+                }}
+              />
+            </Switch>
+          </Spin>
+        </Layout>
+      </Content>
     );
   }
 }
 
-const mapStateToProps = ({ userReducer }) => {
-  return {
-    loggedIn: userReducer.loggedIn,
-    token: userReducer.token,
-    user: userReducer.user,
-  };
-};
-
-export default connect(mapStateToProps)(Orders);
+export default connect(({ userReducer }) => ({ userReducer }), {})(Orders);

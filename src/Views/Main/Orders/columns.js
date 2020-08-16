@@ -4,12 +4,15 @@ import getOrderPrice from "../../../utils/getOrderPrice";
 import getOrderDate from "../../../utils/getOrderDate";
 import { Link } from "react-router-dom";
 import { Tag } from "antd";
+import getCancelReason from "../../../utils/getCancelReason";
 
 const columns = [
   {
     title: "ID",
     dataIndex: "id",
     key: "id",
+    width: 100,
+    fixed: "left",
   },
   {
     title: "Дата создания",
@@ -71,6 +74,14 @@ const columns = [
     key: "urgency",
     render: (urgency, data) => (
       <span>{getOrderDate(urgency, data.urgencyDate)}</span>
+    ),
+  },
+  {
+    title: "Причина отмены",
+    dataIndex: "cancellationReason",
+    key: "cancellationReason",
+    render: (cancellationReason) => (
+      <span>{getCancelReason(cancellationReason)}</span>
     ),
   },
 ];

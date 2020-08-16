@@ -20,6 +20,8 @@ import axios from "axios";
 import { store } from "../../../store";
 import TextArea from "antd/lib/input/TextArea";
 import moment from "moment";
+import { connect } from "react-redux";
+import createLogs from "../../../utils/createLogs";
 
 const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
@@ -29,6 +31,8 @@ const columns = [
     title: "ID",
     dataIndex: "id",
     key: "id",
+    width: 70,
+    fixed: "left",
   },
   {
     title: "Логотип",
@@ -58,14 +62,16 @@ const columns = [
     title: "Дата регистрации",
     dataIndex: "created",
     key: "created",
-    render: (created) => (
-      <span>{`${created[2]}/${created[1]}/${created[0]}`}</span>
-    ),
+    render: (created) =>
+      created && <span>{`${created[2]}/${created[1]}/${created[0]}`}</span>,
   },
   {
-    title: "Адрес",
-    dataIndex: "address",
-    key: "address",
+    title: "Категория",
+    dataIndex: "specializations",
+    key: "specializations",
+    render: (specializations) => (
+      <span>{specializations.map((i) => `${i.specName}\n `)}</span>
+    ),
     width: 200,
   },
   {
@@ -75,19 +81,16 @@ const columns = [
     width: 200,
   },
   {
-    title: "Специализация",
-    dataIndex: "specializations",
-    key: "specializations",
-    render: (specializations) => (
-      <span>{specializations.map((elem) => `${elem.specName} \n`)}</span>
-    ),
-    width: 200,
-  },
-  {
     title: "Номер телефона",
     dataIndex: "phone",
     key: "phone",
     render: (phone) => <span>8{phone}</span>,
+  },
+  {
+    title: "Адрес",
+    dataIndex: "address",
+    key: "address",
+    width: 200,
   },
   {
     title: "Тариф",
@@ -104,7 +107,8 @@ const columns = [
     render: (subscriptionStart) => (
       <span>
         {subscriptionStart &&
-          moment(subscriptionStart).subtract(1, "months").format("DD/MM/YYYY")}
+          // moment(subscriptionStart).subtract(1, "months").format("DD/MM/YYYY")}
+          `${subscriptionStart[2]}/${subscriptionStart[1]}/${subscriptionStart[0]}`}
       </span>
     ),
   },
@@ -115,7 +119,8 @@ const columns = [
     render: (subscriptionEnd) => (
       <span>
         {subscriptionEnd &&
-          moment(subscriptionEnd).subtract(1, "months").format("DD/MM/YYYY")}
+          // moment(subscriptionEnd).subtract(1, "months").format("DD/MM/YYYY")}
+          `${subscriptionEnd[2]}/${subscriptionEnd[1]}/${subscriptionEnd[0]}`}
       </span>
     ),
   },
@@ -123,20 +128,23 @@ const columns = [
     title: "Остаток за размещения баннера",
     dataIndex: "bannerBalance",
     key: "bannerBalance",
-    render: (bannerBalance) => (
-      <span
-        style={
-          bannerBalance < 1000
-            ? {
-                backgroundColor: "red",
-                padding: "10px 20px",
-              }
-            : {}
-        }
-      >
-        {bannerBalance}
-      </span>
-    ),
+    render: (bannerBalance) => {
+      const balance = bannerBalance ? parseInt(bannerBalance, 10) : 0;
+      return (
+        <span
+          style={
+            balance < 1000
+              ? {
+                  backgroundColor: "red",
+                  padding: "10px 20px",
+                }
+              : {}
+          }
+        >
+          {balance}
+        </span>
+      );
+    },
     width: 170,
   },
   {
@@ -152,18 +160,21 @@ const columns = [
     },
   },
 ];
-
-export default class MarketTable extends React.Component {
+class MarketTable extends React.Component {
   state = {
     markets: [],
     spinning: false,
     editModal: false,
     files: [],
+    data: [],
     specializations: [],
+    search: "",
     productCategories: [],
     cities: [],
     logo: "",
     specializationIds: [],
+    latitude: null,
+    longitude: null,
   };
 
   componentDidMount() {
@@ -171,7 +182,6 @@ export default class MarketTable extends React.Component {
   }
 
   refresh = () => {
-    const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
     const headers = {};
     axios
@@ -180,14 +190,32 @@ export default class MarketTable extends React.Component {
       })
       .then((res) => this.setState({ cities: res.data.cities }))
       .catch((err) => console.log(err));
+
+    let cities = "";
+
+    if (
+      !this.props.userReducer.user.isSuperAdmin &&
+      this.props.userReducer.user.cities
+    ) {
+      this.props.userReducer.user.cities.forEach((city) => {
+        cities += `city=${city}&`;
+      });
+
+      cities = "/cities?" + cities.substring(0, cities.lastIndexOf("&"));
+    }
+
     axios
-      .get(`${url}api/v1/market`, {
+      .get(`${url}api/v1/market${cities}`, {
         headers,
       })
       .then((res) => {
         console.log(res.data);
 
-        this.setState({ markets: res.data.markets, spinning: false });
+        this.setState({
+          markets: res.data.markets,
+          data: res.data.markets,
+          spinning: false,
+        });
         axios
           .get(`${url}api/v1/spec`, {
             headers,
@@ -204,46 +232,11 @@ export default class MarketTable extends React.Component {
   };
 
   createMarket = () => {
-    const {
-      about,
-      address,
-      industry,
-      breakSchedule,
-      workdaysSchedule,
-      saturdaySchedule,
-      sundaySchedule,
-      site,
-      status,
-      youtubeVideoLink,
-      email,
-      name,
-      phone,
-      productCategoriesIds,
-      specializationIds,
-    } = this.state;
-    const obj = {
-      about,
-      address,
-      breakSchedule,
-      industry,
-      workdaysSchedule,
-      saturdaySchedule,
-      sundaySchedule,
-      site,
-      status,
-      youtubeVideoLink,
-      email,
-      name,
-      phone,
-      productCategoriesIds,
-      specializationIds,
-    };
-    const headers = {};
+    const { specializationIds, latitude, longitude } = this.state;
     this.setState({ editModal: false, spinning: true });
-    axios
-      .post(
-        `${url}api/v1/super/market`,
-        {
+    if (this.state.username && this.state.code) {
+      axios
+        .post(`${url}api/v1/super/market`, {
           about: this.state.about,
           address: this.state.address,
           industry: this.state.industry,
@@ -258,50 +251,77 @@ export default class MarketTable extends React.Component {
           name: this.state.name,
           phone: this.state.phone,
           cityId: this.state.cityId,
+          coordinates:
+            latitude && longitude
+              ? JSON.stringify({ latitude, longitude })
+              : null,
           specializationIds,
-        },
-        {
-          headers,
-        }
-      )
-      .then((resmarket) => {
-        const file = new FormData();
-        file.append("file", this.state.logo);
+        })
+        .then((resmarket) => {
+          const file = new FormData();
+          file.append("file", this.state.logo);
 
-        const authOptions = {
-          method: "POST",
-          url: `${url}api/v1/image/market/${resmarket.data.id}`,
-          data: file,
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        };
+          createLogs(`Создал профиль Продавца ${this.state.name}`);
 
-        axios(authOptions).then((res) => {
-          const file2 = new FormData();
-          this.state.files.forEach((element) => {
-            file2.append("files", element);
-          });
-          const authOptionsPhotos = {
+          const authOptions = {
             method: "POST",
-            url: `${url}api/v1/image/market/${resmarket.data.id}/photos`,
-            data: file2,
+            url: `${url}api/v1/image/market/${resmarket.data.id}`,
+            data: file,
             headers: {
               "Content-Type": "multipart/form-data",
             },
           };
 
-          axios(authOptionsPhotos).then((res) => {
-            this.refresh();
-            this.setState({ editModal: false });
-          });
-        });
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+          axios(authOptions).then((res) => {
+            createLogs(`Добавил логотип Продавца ${this.state.name}`);
 
-    console.log(obj);
+            const file2 = new FormData();
+            this.state.files.forEach((element) => {
+              file2.append("files", element);
+            });
+            const authOptionsPhotos = {
+              method: "POST",
+              url: `${url}api/v1/image/market/${resmarket.data.id}/photos`,
+              data: file2,
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            };
+
+            axios(authOptionsPhotos).then((res) => {
+              createLogs(`Добавил фотографии Продавца ${this.state.name}`);
+
+              axios({
+                method: "POST",
+                url: `${url}api/v1/admin/market/user`,
+                data: {
+                  code: this.state.code,
+                  username: this.state.username,
+                },
+              }).then((user) => {
+                axios({
+                  method: "PUT",
+                  url: `${url}api/v1/user/${user.data.username}`,
+                  data: {
+                    marketId: resmarket.data.id,
+                  },
+                }).then(() => {
+                  createLogs(
+                    `Создал пользователя(Логин:${this.state.username}) Кабинета Продавца ${this.state.name}`
+                  );
+                  this.refresh();
+                  setTimeout(() => window.location.reload(), 1000);
+
+                  this.setState({ editModal: false });
+                });
+              });
+            });
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
   };
 
   onChangeLogo = (info) => {
@@ -324,6 +344,21 @@ export default class MarketTable extends React.Component {
     }
   };
 
+  change = (value) => {
+    this.setState({ search: value.target.value });
+    if (value.target.value === "") {
+      this.setState({ data: this.state.markets });
+    } else {
+      const data = this.state.markets.filter(
+        (data) =>
+          `${data.marketName}`
+            .toLowerCase()
+            .indexOf(value.target.value.toLowerCase()) !== -1
+      );
+      this.setState({ data });
+    }
+  };
+
   render() {
     const props = {
       name: "file",
@@ -333,10 +368,10 @@ export default class MarketTable extends React.Component {
       },
     };
     return (
-      <Content style={{ padding: "0 24px", minHeight: 280 }}>
-        <h2 style={{ textAlign: "center" }}>Список маркетов</h2>
+      <Content style={{ minHeight: 280 }}>
+        <h2 style={{ textAlign: "center" }}>Список Продавцов</h2>
         <Modal
-          title="Создать маркета"
+          title="Создать Продавца"
           visible={this.state.editModal}
           okText="Создать"
           cancelText="Закрыть"
@@ -345,9 +380,20 @@ export default class MarketTable extends React.Component {
           onCancel={() => this.setState({ editModal: false })}
         >
           <Form>
-            <Form.Item label="Название маркета">
+            <Form.Item label="Название Продавца">
               <Input
                 onChange={(e) => this.setState({ name: e.target.value })}
+              />
+            </Form.Item>
+            <Form.Item label="Логин Кабинета Продавца">
+              <Input
+                onChange={(e) => this.setState({ username: e.target.value })}
+              />
+            </Form.Item>
+            <Form.Item label="Пароль">
+              <Input
+                type="password"
+                onChange={(e) => this.setState({ code: e.target.value })}
               />
             </Form.Item>
             <Form.Item label="Адрес">
@@ -410,7 +456,7 @@ export default class MarketTable extends React.Component {
                 onChange={(e) => this.setState({ site: e.target.value })}
               />
             </Form.Item>
-            <Form.Item label="Про маркет">
+            <Form.Item label="Про Продавца">
               <TextArea
                 rows={4}
                 onChange={(e) => this.setState({ about: e.target.value })}
@@ -482,7 +528,35 @@ export default class MarketTable extends React.Component {
                 </Form.Item>
               </Col>
             </Row>
-            <Form.Item label="Логотип маркета">
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label="Координаты карты">
+                  <Input
+                    placeholder="Широта"
+                    type="number"
+                    onChange={(e) =>
+                      this.setState({
+                        latitude: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label="Координаты карты">
+                  <Input
+                    placeholder="Долгота"
+                    type="number"
+                    onChange={(e) =>
+                      this.setState({
+                        longitude: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Form.Item label="Логотип Продавца">
               <Upload fileList={[]} {...props} onChange={this.onChangeLogo}>
                 <Button>
                   <Icon type="upload" /> Нажмите чтобы загрузить
@@ -490,7 +564,7 @@ export default class MarketTable extends React.Component {
               </Upload>
               <p>{this.state.logo === "" || this.state.logo.name}</p>
             </Form.Item>
-            <Form.Item label="Фотографии маркета">
+            <Form.Item label="Фотографии Продавца">
               <Upload {...props} onChange={this.onChangeUploading}>
                 <Button>
                   <Icon type="upload" /> Нажмите чтобы загрузить
@@ -504,22 +578,38 @@ export default class MarketTable extends React.Component {
             <Icon type="reload" />
             Обновить
           </Button>
-          <Button
-            onClick={() => this.setState({ editModal: true })}
-            type="primary"
-          >
-            <Icon type="plus" />
-            Добавить маркет
-          </Button>
+          {this.props.canEditUser && (
+            <Button
+              onClick={() => this.setState({ editModal: true })}
+              type="primary"
+            >
+              <Icon type="plus" />
+              Добавить Продавца
+            </Button>
+          )}
         </Button.Group>
+        <Input
+          style={{ width: 300, marginLeft: 30 }}
+          placeholder="Поиск по Названию"
+          value={this.state.search}
+          onChange={this.change}
+          prefix={<Icon type="search" style={{ color: "rgba(0,0,0,.25)" }} />}
+        />
+        <span style={{ marginLeft: 10 }}>
+          Количество: {this.state.data.length}
+        </span>
         <Spin tip="Подождите..." spinning={this.state.spinning}>
           <Table
             columns={columns}
-            dataSource={this.state.markets}
-            scroll={{ x: true }}
+            pagination={{ pageSize: 7 }}
+            dataSource={this.state.data}
+            style={{ padding: "10px 20px" }}
+            scroll={{ x: "calc(1200px + 70%)", y: 500 }}
           />
         </Spin>
       </Content>
     );
   }
 }
+
+export default connect(({ userReducer }) => ({ userReducer }), {})(MarketTable);

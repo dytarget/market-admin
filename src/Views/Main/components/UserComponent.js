@@ -13,7 +13,7 @@ export const UserComponent = ({ user, master }) => {
     if (user) {
       setloading(false);
     }
-  }, []);
+  }, [user]);
 
   return (
     <div>
@@ -27,7 +27,7 @@ export const UserComponent = ({ user, master }) => {
             >
               <Icon type="eye" key="look" />
             </Link>
-          </Tooltip>
+          </Tooltip>,
         ]}
       >
         <Skeleton loading={loading} avatar active>

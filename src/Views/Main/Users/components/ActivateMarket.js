@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import Axios from "axios";
 import config from "../../../../config/config";
 import moment from "moment";
+import createLogs from "../../../../utils/createLogs";
 
 export const ActivateMarket = ({ id, activateModal, modalValue, refresh }) => {
   const [priceId, setPriceId] = useState(null);
@@ -47,6 +48,8 @@ export const ActivateMarket = ({ id, activateModal, modalValue, refresh }) => {
           Axios.patch(`${config.url}api/v1/market/${id}`, body)
             .then(() => {
               message.success("Успешно");
+              createLogs(`Активировал Продавца с id ${id}`);
+
               refresh();
               modalValue(false);
             })

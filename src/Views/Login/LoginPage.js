@@ -3,11 +3,12 @@ import { Form, Icon, Input, Button, message } from "antd";
 import { connect } from "react-redux";
 import axios from "axios";
 import { userSetAction } from "../../actions/userAction";
+import createLogs from "../../utils/createLogs";
 
 const url = "http://91.201.214.201:8443/";
 
 class LoginPage extends React.Component {
-  handleSubmit = e => {
+  handleSubmit = (e) => {
     e.preventDefault();
     this.props.form.validateFields((err, values) => {
       if (!err) {
@@ -18,13 +19,16 @@ class LoginPage extends React.Component {
           data: values,
           headers: {
             "Content-Type": "application/json",
-          }
+          },
         })
-          .then(res => {
-            this.props.userSetAction(true, res.data.accessToken,{});
-            this.props.history.push("/");
+          .then((res) => {
+            axios.get(`${url}api/v1/user/${values.username}`).then((user) => {
+              this.props.userSetAction(true, res.data.accessToken, user.data);
+              createLogs("зашел в систему");
+              this.props.history.push("/");
+            });
           })
-          .catch(err => {
+          .catch((err) => {
             message.error("Неправильный логин или пароль");
           });
       }
@@ -38,7 +42,7 @@ class LoginPage extends React.Component {
         <Form onSubmit={this.handleSubmit}>
           <Form.Item>
             {getFieldDecorator("username", {
-              rules: [{ required: true, message: "Введите логин!" }]
+              rules: [{ required: true, message: "Введите логин!" }],
             })(
               <Input
                 prefix={
@@ -50,7 +54,7 @@ class LoginPage extends React.Component {
           </Form.Item>
           <Form.Item>
             {getFieldDecorator("password", {
-              rules: [{ required: true, message: "Введите пароль!" }]
+              rules: [{ required: true, message: "Введите пароль!" }],
             })(
               <Input
                 prefix={
@@ -79,5 +83,5 @@ class LoginPage extends React.Component {
 const LoginPageForm = Form.create({ name: "normal_login" })(LoginPage);
 
 export default connect(({ userReducer }) => ({ userReducer }), {
-  userSetAction
+  userSetAction,
 })(LoginPageForm);

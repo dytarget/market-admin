@@ -6,7 +6,6 @@ import {
   Col,
   Input,
   Spin,
-  Tabs,
   Button,
   Icon,
   Popconfirm,
@@ -19,7 +18,6 @@ import {
 } from "antd";
 import axios from "axios";
 import ImageGallery from "react-image-gallery";
-import { store } from "../../../store";
 import "./Photo.css";
 import UpdateMarket from "./components/UpdateMarket";
 import Products from "../Products/Products";
@@ -28,11 +26,28 @@ import { ActivateMarket } from "./components/ActivateMarket";
 import { PayForBanner } from "./components/PayForBanner";
 import moment from "moment";
 import { PayForSideBanner } from "./components/PayForSideBanner";
+import ProductCategories from "./components/ProductCategories";
+import ButtonGroup from "antd/lib/button/button-group";
+import createLogs from "../../../utils/createLogs";
+import config from "../../../config/config";
+import generateCitiesId from "../../../utils/generateCitiesId";
 
 const { Content } = Layout;
 const { TextArea } = Input;
-const { TabPane } = Tabs;
-const { Option } = Select;
+
+const viewReportLabelNames = {
+  profileViewCount: "Просмотры профиля",
+  phoneNumberViewCount: "Просмотры номера телефона",
+  productViewCount: "Просмотроы товаров и цен",
+  bannerViewMasterCount: "Просмотры баннера Мастера",
+  bannerFollowMasterCount: "Переходы по баннерам Мастера",
+  sideViewMasterCount: "Просмотры бокового баннера Мастера",
+  sideFollowMasterCount: "Переходы по боковому баннеру Мастера",
+  bannerViewCustomerCount: "Просмотры баннера Заказчики",
+  bannerFollowCustomerCount: "Переходы по баннерам Заказчики",
+  sideViewCustomerCount: "Просмотры бокового баннера Заказчики",
+  sideFollowCustomerCount: "Переходы по боковому баннеру Заказчики",
+};
 
 const url = "http://91.201.214.201:8443/";
 
@@ -40,23 +55,24 @@ export class MarketProfile extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      master: "",
       spinning: true,
-      responds: [],
       marketCategories: [],
       editModal: false,
-      masterType: "",
-      orgName: "",
-      promoImage: "",
-      createPromoModal: false,
-      createProdModal: false,
-      prodImage: "",
-      prodCats: [],
       data: [],
       updateModal: false,
       activateModal: false,
       bannerPayModal: false,
       sideBannerPayModal: false,
+      updateAvatar: false,
+      logo: "",
+      marketPhotos: [],
+      addMarketPhotosModal: false,
+      chooseManager: false,
+      managerId: 0,
+      admins: [],
+      userAdmin: "",
+      passwordVisible: false,
+      loginVisible: false,
     };
   }
 
@@ -69,67 +85,35 @@ export class MarketProfile extends Component {
     axios
       .get(`${url}api/v1/market/${this.props.match.params.id}`)
       .then((res) => {
-        const dataRes = [];
-        dataRes.push({ name: "Просмотры профиля", count: res.data.viewCount });
-        dataRes.push({
-          name: "Просмотры номера телефона",
-          count: res.data.phoneViewCount,
-        });
-        dataRes.push({
-          name: "Просмотров товаров и цен",
-          count: 0,
-        });
+        axios
+          .get(`${url}api/v1/admin/report/view/${this.props.match.params.id}`)
+          .then((result) => {
+            const dataRes = [];
 
-        let viewMasters = 0;
-        let viewCustomers = 0;
+            Object.keys(result.data.todayReport).forEach((report) => {
+              dataRes.push({
+                name: viewReportLabelNames[report],
+                todayReport: result.data.todayReport[report],
+                weekReport: result.data.weekReport[report],
+                monthReport: result.data.monthReport[report],
+                sumReport: result.data.sumReport[report],
+              });
+            });
+            this.setState({ data: dataRes });
+          });
 
-        res.data.promos.map((elem) => {
-          if (elem.displayType === "MASTER") {
-            console.log(elem.viewCount);
-
-            viewMasters = viewMasters + elem.viewCount ? elem.viewCount : 0;
-            console.log(viewMasters);
-          } else {
-            viewCustomers = viewCustomers + elem.viewCount ? elem.viewCount : 0;
-          }
-        });
-
-        dataRes.push({
-          name: "Просмотры баннера",
-          count: viewCustomers + viewMasters,
-          children: [
-            { name: "Заказчики", count: viewCustomers },
-            { name: "Мастеры", count: viewMasters },
-          ],
-        });
-
-        dataRes.push({
-          name: "Переходы по баннерам",
-          count: 0,
-          children: [
-            { name: "Заказчики", count: 0 },
-            { name: "Мастеры", count: 0 },
-          ],
-        });
-
-        this.setState({ market: res.data, spinning: false, data: dataRes });
+        this.setState({ market: res.data, spinning: false });
       })
       .catch((err) => {
         console.log(err);
       });
-  };
-
-  deleteImage = (id) => {
-    this.setState({ spinning: true });
-    console.log(id);
-
     axios
-      .delete(`${url}api/v1/image/${id}`)
+      .get(`${url}api/v1/super/user/admins${generateCitiesId(true)}`)
+      .then((res) => this.setState({ admins: res.data }));
+    axios
+      .get(`${url}api/v1/user/market/${this.props.match.params.id}`)
       .then((res) => {
-        this.refresh();
-      })
-      .catch((err) => {
-        console.log(err);
+        this.setState({ userAdmin: res.data });
       });
   };
 
@@ -146,47 +130,13 @@ export class MarketProfile extends Component {
       });
   };
 
-  updateMasterStatus = (status) => {
-    this.setState({ spinning: true });
-
-    axios
-      .put(`${url}api/v1/user/${this.state.master.username}`, { status })
-      .then((res) => {
-        this.refresh();
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
-
-  updateMasterType = () => {
-    this.setState({ spinning: true });
-
-    const { masterType, orgName, master } = this.state;
-    if (masterType === "COMPANY" && orgName.length < 1) {
-      message.error("Заполните организацю мастера");
-    } else {
-      axios
-        .put(`${url}api/v1/user/${master.username}`, { masterType, orgName })
-        .then((res) => {
-          this.refresh();
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
-  };
-
-  onChangePromoImage = (info) => {
-    this.setState({ promoImage: info.file.originFileObj });
-  };
-
   deleteMarket = () => {
     this.setState({ spinning: true });
 
     axios
       .delete(`${url}api/v1/super/market/${this.state.market.id}`)
       .then((res) => {
+        createLogs(`Удалил Продавца ${this.state.market.marketName}`);
         this.refresh();
         this.props.history.push("/users/markets");
       })
@@ -195,69 +145,144 @@ export class MarketProfile extends Component {
       });
   };
 
-  createPromo = () => {
-    this.setState({ spinning: true, createPromoModal: false });
+  deleteImage = (id) => {
+    this.setState({ spinning: true });
+    axios.delete(`${url}api/v1/image/${id}`).then(() => {
+      message.success("Успешно");
+      createLogs(`Удалил Фотографии ${this.state.market.marketName}`);
+      this.refresh();
+    });
+  };
+
+  updateAvatar = () => {
+    this.setState({ updateAvatar: false, spinning: true });
+    const file = new FormData();
+    file.append("file", this.state.logo);
+
+    const authOptions = {
+      method: "POST",
+      url: `${url}api/v1/image/market/${this.state.market.id}`,
+      data: file,
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    };
+
+    axios(authOptions).then((res) => {
+      createLogs(`Обновил логотип Продавца ${this.state.market.marketName}`);
+
+      this.refresh();
+      setTimeout(() => window.location.reload(), 1000);
+
+      message.success("Успешно");
+      this.setState({ logo: "" });
+    });
+  };
+
+  addMarketPhotos = () => {
+    this.setState({
+      addMarketPhotosModal: false,
+      spinning: true,
+    });
+    const file2 = new FormData();
+    this.state.marketPhotos.forEach((element) => {
+      file2.append("files", element);
+    });
+    const axiosOptionsPhotos = {
+      method: "POST",
+      url: `${url}api/v1/image/market/${this.state.market.id}/photos`,
+      data: file2,
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    };
+
+    axios(axiosOptionsPhotos).then((res) => {
+      createLogs(`Добавил фотографии Продавца ${this.state.market.marketName}`);
+
+      this.refresh();
+      setTimeout(() => window.location.reload(), 1000);
+
+      this.setState({ marketPhotos: [] });
+    });
+  };
+
+  onChangeUploading = (info) => {
+    if (info.file.status !== "uploading") {
+      console.log(info.file, info.fileList);
+    }
+    if (info.file.status === "done") {
+      const { marketPhotos } = this.state;
+      marketPhotos.push(info.file.originFileObj);
+      this.setState({ marketPhotos });
+
+      message.success(`${info.file.name} file uploaded successfully`);
+    } else if (info.file.status === "error") {
+      message.error(`${info.file.name} file upload failed.`);
+    }
+  };
+
+  chooseManager = () => {
+    this.setState({ spinning: true });
+    const { managerId } = this.state;
 
     axios
-      .post(
-        `${url}api/v1/promo?link=${this.state.link}&marketId=${this.props.match.params.id}`
-      )
+      .patch(`${url}api/v1/market/${this.state.market.id}`, {
+        managerId,
+      })
       .then((res) => {
-        console.log(res.data);
-        const files = new FormData();
-        files.append("file", this.state.promoImage);
-        axios
-          .post(`${url}api/v1/image/promo/${res.data.id}`, files, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          })
-          .then((res) => {
-            this.refresh();
-          })
-          .catch((err) => {
-            console.log(err);
-          });
+        createLogs(
+          `Выбрал менеджера по ID(${this.state.market.id}) для Продавца ${this.state.market.marketName}`
+        );
+
+        this.refresh();
       })
       .catch((err) => {
         console.log(err);
+        message.error("Ошибка");
       });
   };
 
-  createProduct = () => {
-    const token = store.getState().userReducer.token;
-    this.setState({ createProdModal: false });
-    axios
-      .post(
-        `${url}api/v1/product`,
-        {
-          categoryId: this.state.prodCatId,
-          cost: this.state.prodCost,
-          description: this.state.prodDescription,
-          marketId: this.state.market.id,
-          name: this.state.prodName,
-        },
-        {
-          headers: {},
-        }
-      )
-      .then((res) => {
-        const file = new FormData();
-        file.append("file", this.state.prodImage);
-
-        const authOptions2 = {
-          method: "POST",
-          url: `${url}api/v1/image/product/${res.data.id}`,
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          data: file,
-        };
-        axios(authOptions2).then(() => {
-          this.refresh();
-          message.success("Успешно!");
+  handleUpdateLogin = () => {
+    if (this.state.newLogin) {
+      axios
+        .patch(`${config.url}api/v1/user/creds/${this.state.userAdmin.id}`, {
+          userName: this.state.newLogin,
+        })
+        .then((res) => {
+          createLogs(
+            `Обновил логин Маркета ${this.state.market.id} на новый(${this.state.newLogin}) ${this.state.userAdmin.username}`
+          );
+          message.success("Успешно");
+          setTimeout(() => window.location.reload(), 1000);
+        })
+        .catch((err) => {
+          this.setState({ loginVisible: false });
+          message.error("Ошибка");
         });
-      });
+    } else {
+      message.error("Заполните поля или внесите изменения");
+    }
+  };
+
+  handleUpdatePassword = () => {
+    if (this.state.newPassword) {
+      axios
+        .patch(`${config.url}api/v1/user/creds/${this.state.userAdmin.id}`, {
+          password: this.state.newPassword,
+        })
+        .then((res) => {
+          createLogs(`Обновил пароль Маркета ${this.state.market.id}`);
+          message.success("Успешно");
+          setTimeout(() => window.location.reload(), 1000);
+        })
+        .catch((err) => {
+          this.setState({ passwordVisible: false });
+          message.error("Ошибка");
+        });
+    } else {
+      message.error("Заполните поля");
+    }
   };
 
   render() {
@@ -282,44 +307,174 @@ export class MarketProfile extends Component {
       },
     };
 
+    console.log(this.state.data);
+
     return (
-      <Content style={{ padding: "0 24px", minHeight: 280 }}>
-        <h2 style={{ textAlign: "center" }}>Карточка Маркета</h2>
+      <Content style={{ padding: "0 24px", minHeight: 280, minWidth: 1000 }}>
+        <h2 style={{ textAlign: "center" }}>Карточка Продавца</h2>
         <Spin spinning={spinning}>
           {spinning || (
             <Fragment>
               <Modal
-                title="Создать акции и скидки"
-                visible={this.state.createPromoModal}
-                okText="Создать"
-                cancelText="Закрыть"
+                title="Обновить Пароль"
+                visible={this.state.passwordVisible}
+                onCancel={() => this.setState({ passwordVisible: false })}
+                onOk={this.handleUpdatePassword}
+                okText="Изменить"
+                cancelText="Отменить"
                 closable={false}
-                onOk={this.createPromo}
-                onCancel={() => this.setState({ createPromoModal: false })}
               >
-                <Form>
-                  <Form.Item label="Переходня ссылка">
+                <Form
+                  style={{ marginTop: 20 }}
+                  layout="vertical"
+                  hideRequiredMark
+                >
+                  <Form.Item label="Пароль">
                     <Input
-                      onChange={(text) =>
-                        this.setState({ link: text.target.value })
+                      value={this.state.newPassword}
+                      type="password"
+                      onChange={(e) =>
+                        this.setState({ newPassword: e.target.value })
                       }
                     />
                   </Form.Item>
-                  <Form.Item label="Фото">
+                </Form>
+              </Modal>
+
+              <Modal
+                title="Обновить Логин"
+                visible={this.state.loginVisible}
+                onCancel={() => this.setState({ loginVisible: false })}
+                onOk={this.handleUpdateLogin}
+                okText="Изменить"
+                cancelText="Отменить"
+                closable={false}
+              >
+                <Form
+                  style={{ marginTop: 20 }}
+                  layout="vertical"
+                  hideRequiredMark
+                >
+                  <Form.Item label="Логин">
+                    <Input
+                      defaultValue={this.state.userAdmin.username}
+                      onChange={(e) =>
+                        this.setState({ newLogin: e.target.value })
+                      }
+                    />
+                  </Form.Item>
+                </Form>
+              </Modal>
+
+              <Modal
+                title="Обновить Логотип"
+                visible={this.state.updateAvatar}
+                okText="Обновить"
+                cancelText="Закрыть"
+                closable={false}
+                onOk={this.updateAvatar}
+                onCancel={() => this.setState({ updateAvatar: false })}
+              >
+                <Form>
+                  <Form.Item label="Логотип Продавца">
                     <Upload
                       fileList={[]}
                       {...props}
-                      onChange={this.onChangePromoImage}
+                      onChange={(info) =>
+                        this.setState({ logo: info.file.originFileObj })
+                      }
                     >
                       <Button>
                         <Icon type="upload" /> Нажмите чтобы загрузить
                       </Button>
                     </Upload>
-                    <p>
-                      {this.state.promoImage === "" ||
-                        this.state.promoImage.name}
-                    </p>
+                    <p>{this.state.logo === "" || this.state.logo.name}</p>
                   </Form.Item>
+                </Form>
+              </Modal>
+              <Modal
+                title="Выбрать Менеджера"
+                visible={this.state.chooseManager}
+                okText="Выбрать"
+                cancelText="Закрыть"
+                onCancel={() => this.setState({ chooseManager: false })}
+                onOk={this.chooseManager}
+              >
+                <Form>
+                  <Form.Item label="Менеджер">
+                    <Select
+                      onChange={(managerId) => this.setState({ managerId })}
+                    >
+                      {this.state.admins.map((admin) => (
+                        <Select.Option value={admin.id}>
+                          {admin.firstName} {admin.lastName}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Form>
+              </Modal>
+              <Modal
+                title="Редактировать фотографии"
+                visible={this.state.addMarketPhotosModal}
+                cancelButtonProps={{
+                  style: { opacity: 0 },
+                  disabled: true,
+                }}
+                okText="Закрыть"
+                closable={false}
+                onOk={() => this.setState({ addMarketPhotosModal: false })}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    width: "100%",
+                    gridGap: 10,
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gridAutoRows: "minmax(100px,auto)",
+                  }}
+                >
+                  {market?.photos?.map((photos, index) => (
+                    <div key={`${index}`}>
+                      <img
+                        style={{
+                          width: 70,
+                          height: 70,
+                          marginRight: 20,
+                        }}
+                        src={`http://91.201.214.201:8443/images/${photos.imageName}`}
+                        alt="gg"
+                      />
+                      <Popconfirm
+                        placement="top"
+                        title={"Удалить ?"}
+                        onConfirm={() => {
+                          this.setState({ addMarketPhotosModal: false });
+                          this.deleteImage(photos.id);
+                        }}
+                        okText="Yes"
+                        cancelText="No"
+                      >
+                        <Button type="danger">
+                          <Icon type="delete" />
+                        </Button>
+                      </Popconfirm>
+                    </div>
+                  ))}
+                </div>
+                <Form>
+                  <Form.Item label="Фотографии Продавца">
+                    <Upload {...props} onChange={this.onChangeUploading}>
+                      <Button>
+                        <Icon type="upload" /> Нажмите чтобы загрузить
+                      </Button>
+                    </Upload>
+                  </Form.Item>
+                  {this.state.marketPhotos.length > 0 && (
+                    <Button onClick={this.addMarketPhotos}>
+                      Добавить Фотографии
+                    </Button>
+                  )}
                 </Form>
               </Modal>
               <UpdateMarket
@@ -352,76 +507,12 @@ export class MarketProfile extends Component {
                 }
                 refresh={this.refresh}
               />
-
-              <Modal
-                title="Создать Продук"
-                visible={this.state.createProdModal}
-                okText="Создать"
-                cancelText="Закрыть"
-                closable={false}
-                onOk={this.createProduct}
-                onCancel={() => this.setState({ createProdModal: false })}
-              >
-                <Form>
-                  <Select
-                    onChange={(categoryId) =>
-                      this.setState({ prodCatId: categoryId })
-                    }
-                  >
-                    {this.state.prodCats.map((cat) => (
-                      <Select.Option value={cat.id}>
-                        {cat.categoryName}
-                      </Select.Option>
-                    ))}
-                  </Select>
-
-                  <Form.Item label="Название">
-                    <Input
-                      onChange={(e) =>
-                        this.setState({ prodName: e.target.value })
-                      }
-                    />
-                  </Form.Item>
-
-                  <Form.Item label="Описание">
-                    <Input
-                      onChange={(e) =>
-                        this.setState({ prodDescription: e.target.value })
-                      }
-                    />
-                  </Form.Item>
-
-                  <Form.Item label="Цена">
-                    <Input
-                      onChange={(e) =>
-                        this.setState({ prodCost: e.target.value })
-                      }
-                    />
-                  </Form.Item>
-
-                  <Form.Item label="Фото">
-                    <Upload
-                      fileList={[]}
-                      onChange={(info) =>
-                        this.setState({ prodImage: info.file.originFileObj })
-                      }
-                    >
-                      <Button>
-                        <Icon type="upload" /> Нажмите чтобы загрузить
-                      </Button>
-                    </Upload>
-                    <p>
-                      {this.state.prodImage === "" || this.state.prodImage.name}
-                    </p>
-                  </Form.Item>
-                </Form>
-              </Modal>
-
               <div style={{ display: "flex", flexDirection: "row" }}>
                 {market.subscriptionType === "FULL" && (
                   <div style={{ margin: "0 10px" }}>
                     <Button
                       onClick={() =>
+                        this.props.canEditUser &&
                         this.setState({ sideBannerPayModal: true })
                       }
                       type="primary"
@@ -434,7 +525,10 @@ export class MarketProfile extends Component {
                 {market.subscriptionType === "FULL" && (
                   <div style={{ margin: "0 10px" }}>
                     <Button
-                      onClick={() => this.setState({ bannerPayModal: true })}
+                      onClick={() =>
+                        this.props.canEditUser &&
+                        this.setState({ bannerPayModal: true })
+                      }
                       type="primary"
                     >
                       Оплатить за баннера
@@ -444,7 +538,10 @@ export class MarketProfile extends Component {
                 )}
                 <div style={{ margin: "0 10px", width: 258 }}>
                   <Button
-                    onClick={() => this.setState({ activateModal: true })}
+                    onClick={() =>
+                      this.props.canEditUser &&
+                      this.setState({ activateModal: true })
+                    }
                     type="primary"
                     disabled={market.subscriptionType === "FULL"}
                   >
@@ -458,7 +555,7 @@ export class MarketProfile extends Component {
                     <Input
                       value={
                         market.subscriptionEnd
-                          ? moment(market.subscriptionEnd).format("DD/MM/YYYY")
+                          ? `${market.subscriptionEnd[2]}/${market.subscriptionEnd[1]}/${market.subscriptionEnd[0]}`
                           : ""
                       }
                     />
@@ -468,21 +565,67 @@ export class MarketProfile extends Component {
 
               <div style={{ margin: "20px 0px" }}>
                 <Button.Group>
-                  <Popconfirm
-                    placement="top"
-                    onConfirm={this.deleteMarket}
-                    title={"Удалить ?"}
-                    okText="Yes"
-                    cancelText="No"
-                  >
-                    <Button type="danger">Удалить</Button>
-                  </Popconfirm>
-                  <Button
-                    onClick={() => this.setState({ updateModal: true })}
-                    type="primary"
-                  >
-                    Редактировать
-                  </Button>
+                  {this.props.canDeleteUser && (
+                    <Popconfirm
+                      placement="top"
+                      onConfirm={this.deleteMarket}
+                      title={"Удалить ?"}
+                      okText="Yes"
+                      cancelText="No"
+                    >
+                      <Button type="danger">Удалить Продавца</Button>
+                    </Popconfirm>
+                  )}
+                  {this.props.canEditUser && (
+                    <Button
+                      onClick={() => this.setState({ updateModal: true })}
+                      type="primary"
+                    >
+                      Редактировать
+                    </Button>
+                  )}
+                  {this.props.canEditUser && market && market.logo && (
+                    <Button
+                      onClick={() => this.setState({ updateAvatar: true })}
+                      type="primary"
+                    >
+                      Обновить Логотип
+                    </Button>
+                  )}
+                  {this.props.canEditUser && (
+                    <Button
+                      onClick={() =>
+                        this.setState({ addMarketPhotosModal: true })
+                      }
+                      type="primary"
+                    >
+                      Редактировать фотографии
+                    </Button>
+                  )}
+                  {this.props.canEditUser && (
+                    <Button
+                      onClick={() => this.setState({ chooseManager: true })}
+                    >
+                      Выбрать {market.manager ? "нового" : ""} Менеджера
+                    </Button>
+                  )}
+                  {this.props.canEditUser && (
+                    <>
+                      {" "}
+                      <Button
+                        onClick={() => this.setState({ loginVisible: true })}
+                        type="primary"
+                      >
+                        Обновить Логин(Кабинет Продавца)
+                      </Button>
+                      <Button
+                        onClick={() => this.setState({ passwordVisible: true })}
+                        type="primary"
+                      >
+                        Обновить Пароль(Кабинет Продавца)
+                      </Button>
+                    </>
+                  )}
                 </Button.Group>
               </div>
 
@@ -529,6 +672,11 @@ export class MarketProfile extends Component {
                         </Form.Item>
                       </Col>
                       <Col span={12}>
+                        <Form.Item label="Отрасль">
+                          <Input value={market?.industry} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
                         <Form.Item label="Сайт">
                           <Input value={market.site} />
                         </Form.Item>
@@ -536,6 +684,30 @@ export class MarketProfile extends Component {
                       <Col span={12}>
                         <Form.Item label="Эмайл">
                           <Input value={market.email} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={6}>
+                        <Form.Item label="Широрта(Карта)">
+                          <Input
+                            value={
+                              market.coordinates
+                                ? JSON.parse(market.coordinates?.toLowerCase())
+                                    .latitude
+                                : null
+                            }
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={6}>
+                        <Form.Item label="Долгота(Карта)">
+                          <Input
+                            value={
+                              market.coordinates
+                                ? JSON.parse(market.coordinates?.toLowerCase())
+                                    .longitude
+                                : null
+                            }
+                          />
                         </Form.Item>
                       </Col>
                       <Col span={24}>
@@ -566,6 +738,30 @@ export class MarketProfile extends Component {
                       <Col span={24}>
                         <Form.Item label="Ссылка на YouTube видео">
                           <Input value={market.youtubeVideoLink} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={6}>
+                        <Form.Item label="Широрта(Карта)">
+                          <Input
+                            value={
+                              market.coordinates
+                                ? JSON.parse(market.coordinates?.toLowerCase())
+                                    .latitude
+                                : null
+                            }
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={6}>
+                        <Form.Item label="Долгота(Карта)">
+                          <Input
+                            value={
+                              market.coordinates
+                                ? JSON.parse(market.coordinates?.toLowerCase())
+                                    .longitude
+                                : null
+                            }
+                          />
                         </Form.Item>
                       </Col>
                       <Col
@@ -609,16 +805,46 @@ export class MarketProfile extends Component {
                     key: "name",
                   },
                   {
-                    title: "Количество",
-                    dataIndex: "count",
-                    key: "count",
+                    title: "Текущий день",
+                    dataIndex: "todayReport",
+                    key: "todayReport",
+                  },
+                  {
+                    title: "Неделя",
+                    dataIndex: "weekReport",
+                    key: "weekReport",
+                  },
+                  {
+                    title: "Месяц",
+                    dataIndex: "monthReport",
+                    key: "monthReport",
+                  },
+                  {
+                    title: "Общая",
+                    dataIndex: "sumReport",
+                    key: "sumReport",
                   },
                 ]}
+                style={{ marginBottom: 20 }}
                 dataSource={this.state.data}
+                pagination={false}
+                scroll={{ y: 500 }}
                 bordered
               />
+              <h2 style={{ textAlign: "center" }}>Баннеры</h2>
+
               <PromosTable promos={this.state.market.promos} />
-              <Products market={this.state.market} />
+              <ProductCategories
+                canEditUser={this.props.canEditUser}
+                canDeleteUser={this.props.canDeleteUser}
+                marketId={this.state.market.id}
+                refresh={this.refresh}
+              />
+              <Products
+                canEditUser={this.props.canEditUser}
+                canDeleteUser={this.props.canDeleteUser}
+                market={this.state.market}
+              />
             </Fragment>
           )}
           <BackTop />

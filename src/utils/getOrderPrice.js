@@ -1,8 +1,8 @@
 const types = ["FIXED", "UP_TO", "CONTRACTUAL"];
 
 const texts = {
-  CONTRACTUAL: "договормися",
-  UP_TO: "до"
+  CONTRACTUAL: "договоримся",
+  UP_TO: "до",
 };
 
 export default (type, value) => {

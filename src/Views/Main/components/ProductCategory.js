@@ -11,75 +11,103 @@ import {
   message,
   Table,
   Popconfirm,
+  Divider,
+  Select,
 } from "antd";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import Axios from "axios";
 import { store } from "../../../store";
+import ButtonGroup from "antd/lib/button/button-group";
+import createLogs from "../../../utils/createLogs";
 
 const url = "http://91.201.214.201:8443/";
 
-export const ProductCategoryList = ({ list, marketId, refresh }) => {
-  const [visibleProduct, setVisibleProduct] = useState(false);
+export const ProductCategoryList = ({
+  list,
+  marketId,
+  refresh,
+  canEditUser,
+}) => {
+  const [visibleUpdate, setVisibleUpdate] = useState(false);
   const [cost, setCost] = useState(0);
   const [description, setDescription] = useState("");
   const [name, setName] = useState("");
   const [image, setImage] = useState("");
-  const [modal, setModal] = useState(false);
+  const [categoryId, setCategoryId] = useState("");
   const [id, setId] = useState(0);
   const [productList, setProductList] = useState([]);
 
   useEffect(() => {
     let arr = [];
-    list.map((elem) => {
+    list.forEach((elem) => {
       const prods = elem.products;
-      prods.map((prod) => (prod.categoryName = elem.categoryName));
+      prods.map((prod) => {
+        prod.categoryName = elem.categoryName;
+        prod.categoryId = elem.id;
+        return prod;
+      });
       arr = arr.concat(prods);
     });
     setProductList(arr);
   }, [list]);
 
-  const createProduct = (categoryId) => {
-    setModal(false);
-    const { token } = store.getState().userReducer;
-
-    Axios.post(
-      `${url}api/v1/product`,
-      {
-        categoryId,
-        cost,
-        description,
-        marketId,
-        name,
-      },
-      {
-        headers: {},
-      }
-    ).then((res) => {
-      const file = new FormData();
-      file.append("file", image);
-
-      const authOptions2 = {
-        method: "POST",
-        url: `${url}api/v1/image/product/${res.data.id}`,
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        data: file,
-      };
-      Axios(authOptions2).then(() => {
-        refresh();
-        message.success("Успешно!");
-      });
-    });
-  };
-
-  const deleteProduct = (id) => {
+  const deleteProduct = (id, name) => {
     message.warn("Подождите");
     Axios.delete(`${url}api/v1/product/${id}`)
-      .then(() => {
+      .then((res) => {
+        createLogs(`Удалил категорию товаров ID=${name}`);
+
         message.success("Успешно удалено");
         refresh();
+      })
+      .catch(() => message.error("Ошибка"));
+  };
+
+  const updateImage = () => {
+    const file = new FormData();
+    file.append("file", image);
+    const axiosOptions = {
+      method: "POST",
+      url: `${url}api/v1/image/product/${id}`,
+      data: file,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    };
+
+    Axios(axiosOptions)
+      .then(() => {
+        message.success("Успешно отредактировано");
+        setVisibleUpdate(false);
+        refresh();
+        setTimeout(() => window.location.reload(), 1000);
+      })
+      .catch(() => message.error("Ошибка"));
+  };
+
+  const updateProduct = () => {
+    message.warn("Подождите");
+    Axios.patch(`${url}api/v1/product/${id}`, {
+      categoryId,
+      cost,
+      description,
+      name,
+    })
+      .then((res) => {
+        if (image === "") {
+          createLogs(`Обновил категорию товаров ID=${res.data.id}`);
+          setTimeout(() => window.location.reload(), 1000);
+
+          message.success("Успешно отредактировано");
+          setVisibleUpdate(false);
+
+          refresh();
+        } else {
+          createLogs(`Обновил категорию товаров ID=${res.data.id}`);
+
+          updateImage();
+        }
       })
       .catch(() => message.error("Ошибка"));
   };
@@ -87,6 +115,7 @@ export const ProductCategoryList = ({ list, marketId, refresh }) => {
   const columns = [
     {
       title: "Фото товара",
+      width: 230,
       render: (data) => {
         return (
           <img
@@ -125,135 +154,73 @@ export const ProductCategoryList = ({ list, marketId, refresh }) => {
       key: "cost",
     },
     {
-      title: "Удалить",
-      key: "delete",
-      render: (data) => (
-        <Popconfirm
-          onConfirm={() => deleteProduct(data.id)}
-          okText="Да"
-          cancelText="Нет"
-          title="Удалить"
-        >
-          <Button type="danger">
-            <Icon type="delete" />
-          </Button>
-        </Popconfirm>
-      ),
+      title: "Действия",
+      key: "operations",
+      render: (record) =>
+        canEditUser && (
+          <ButtonGroup>
+            <Button
+              onClick={() => {
+                setVisibleUpdate(true);
+                setDescription(record.description);
+                setId(record.id);
+                setName(record.productName);
+                setCost(record.cost);
+                setCategoryId(record.categoryId);
+              }}
+              type="primary"
+            >
+              <Icon type="edit" />
+            </Button>
+            <Popconfirm
+              onConfirm={() => deleteProduct(record.id, record.productName)}
+              okText="Да"
+              cancelText="Нет"
+              title="Удалить"
+            >
+              <Button type="danger">
+                <Icon type="delete" />
+              </Button>
+            </Popconfirm>
+          </ButtonGroup>
+        ),
     },
   ];
 
   return (
     <div>
-      {/* <div
-        style={{
-          backgroundColor: "#fff",
-          borderRadius: 20,
-          width: "90%",
-          alignSelf: "center",
-          marginVertical: 25,
-          marginBottom: 40,
-          borderBottomWidth: 2,
-          borderColor: "#999999",
-        }}
-      >
-        <img
-          alt="product"
-          src={
-            product.image
-              ? `http://91.201.214.201:8443/images/${product.image.imageName}`
-              : "https://sanitationsolutions.net/wp-content/uploads/2015/05/empty-image.png"
-          }
-          width={270}
-          height={200}
-        />
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
-            paddingHorizontal: 15,
-            paddingVertical: 10,
-          }}
-        >
-          <div>
-            <p
-              style={{
-                fontSize: 17,
-                maxWidth: "80%",
-                fontWeight: "500",
-              }}
-            >
-              {product.productName} | {product.cost}₸
-            </p>
-            <p style={{ maxWidth: "80%", flexShrink: 1 }}>
-              {product.description}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <List.Item>
-        <List.Item.Meta
-          avatar={
-            <img
-              width={300}
-              height={180}
-              alt="promo"
-              src={
-                category.image
-                  ? `http://91.201.214.201:8443/images/${category.image.imageName}`
-                  : "https://sanitationsolutions.net/wp-content/uploads/2015/05/empty-image.png"
-              }
-            />
-          }
-          title={
-            <div>
-              <div>
-                <Link onClick={() => setVisibleProduct(true)}>
-                  {category.categoryName}
-                </Link>
-              </div>
-              <Button
-                onClick={() => {
-                  setModal(true);
-                  setId(category.id);
-                }}
-              >
-                Создать продукт
-              </Button>
-            </div>
-          }
-        />
-      </List.Item> */}
       <Table
         bordered
-        scroll={{ x: true }}
+        scroll={{ x: "calc(700px + 50%)", y: 500 }}
         dataSource={productList}
         columns={columns}
       />
       <Modal
-        title="Создать продукт"
-        visible={modal}
-        okText="Создать"
+        title="Редактировать Продукт"
+        visible={visibleUpdate}
+        okText="Редактировать"
         cancelText="Закрыть"
         closable={false}
-        onOk={() => createProduct(id)}
-        onCancel={() => setModal(false)}
+        onOk={updateProduct}
+        onCancel={() => setVisibleUpdate(false)}
       >
         <Form>
           <Form.Item label="Название">
-            <Input onChange={(e) => setName(e.target.value)} />
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
           </Form.Item>
 
           <Form.Item label="Описание">
-            <Input onChange={(e) => setDescription(e.target.value)} />
+            <Input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
           </Form.Item>
 
           <Form.Item label="Цена">
-            <Input onChange={(e) => setCost(e.target.value)} />
+            <Input value={cost} onChange={(e) => setCost(e.target.value)} />
           </Form.Item>
 
-          <Form.Item label="Фото">
+          <Form.Item label="Новое Фото">
             <Upload
               fileList={[]}
               onChange={(info) => setImage(info.file.originFileObj)}

@@ -23,6 +23,7 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { store } from "../../../store";
 import TextArea from "antd/lib/input/TextArea";
+import createLogs from "../../../utils/createLogs";
 
 const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
@@ -34,6 +35,9 @@ export default class FAQQuestion extends React.Component {
     editModal: false,
     visibleUpdate: false,
     themes: [],
+    image: "",
+    image_old: "",
+    image_update: "",
   };
 
   componentDidMount() {
@@ -41,6 +45,7 @@ export default class FAQQuestion extends React.Component {
   }
 
   refresh = () => {
+    this.cleanUp();
     const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
     const headers = {
@@ -64,36 +69,63 @@ export default class FAQQuestion extends React.Component {
           });
           arr = arr.concat(faqs);
         });
-        this.setState({ spinning: false, faqCats: arr, themes: res.data });
+        this.setState({
+          spinning: false,
+          faqCats: arr,
+          themes: res.data,
+        });
       })
       .catch((err) => {
         console.log(err);
       });
   };
 
-  createFAQQuestion = () => {
-    this.setState({ editModal: false });
-    const { token } = store.getState().userReducer;
-    const headers = {
-      Authorization: `Bearer ${token}`,
-    };
+  cleanUp = () => {
+    this.setState({
+      categoryId: "",
+      text: "",
+      textKz: "",
+      title: "",
+      titleKz: "",
+      image: "",
+      image_update: "",
+    });
+  };
 
+  createFAQQuestion = () => {
+    this.setState({ editModal: false, spinning: true });
     axios
-      .post(
-        `${url}api/v1/super/faq`,
-        {
-          categoryId: this.state.categoryId,
-          text: this.state.text,
-          textKz: this.state.textKz,
-          title: this.state.title,
-          titleKz: this.state.titleKz,
-        },
-        {
-          headers,
-        }
-      )
+      .post(`${url}api/v1/super/faq`, {
+        categoryId: this.state.categoryId,
+        text: this.state.text,
+        textKz: this.state.textKz,
+        title: this.state.title,
+        titleKz: this.state.titleKz,
+      })
       .then((res) => {
-        this.refresh();
+        createLogs(`Создал часто задаваемый вопрос ID=${res.data?.id}`);
+
+        if (this.state.image !== "") {
+          const file = new FormData();
+          file.append("file", this.state.image);
+
+          const authOptions = {
+            method: "POST",
+            url: `${url}api/v1/image/faq/${res.data.id}`,
+            data: file,
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+          };
+
+          axios(authOptions).then((res) => {
+            this.refresh();
+            setTimeout(() => window.location.reload(), 1000);
+          });
+        } else {
+          this.refresh();
+          setTimeout(() => window.location.reload(), 1000);
+        }
       })
       .catch((err) => {
         console.log(err);
@@ -101,29 +133,40 @@ export default class FAQQuestion extends React.Component {
   };
 
   updateFAQQuestion = () => {
-    const { token } = store.getState().userReducer;
-    const headers = {
-      Authorization: `Bearer ${token}`,
-    };
-
-    this.setState({ visibleUpdate: false });
+    this.setState({ visibleUpdate: false, spinning: true });
 
     axios
-      .patch(
-        `${url}api/v1/super/faq/${this.state.id}`,
-        {
-          categoryId: this.state.categoryId,
-          text: this.state.text,
-          textKz: this.state.textKz,
-          title: this.state.title,
-          titleKz: this.state.titleKz,
-        },
-        {
-          headers,
-        }
-      )
+      .patch(`${url}api/v1/super/faq/${this.state.id}`, {
+        categoryId: this.state.categoryId,
+        text: this.state.text,
+        textKz: this.state.textKz,
+        title: this.state.title,
+        titleKz: this.state.titleKz,
+      })
       .then((res) => {
-        this.refresh();
+        createLogs(`Обновил часто задаваемый вопрос ID=${res.data?.id}`);
+
+        if (this.state.image_update !== "") {
+          const file = new FormData();
+          file.append("file", this.state.image_update);
+
+          const authOptions = {
+            method: "POST",
+            url: `${url}api/v1/image/faq/${this.state.id}`,
+            data: file,
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+          };
+
+          axios(authOptions).then((res) => {
+            this.refresh();
+            setTimeout(() => window.location.reload(), 1000);
+          });
+        } else {
+          this.refresh();
+          setTimeout(() => window.location.reload(), 1000);
+        }
       })
       .catch((err) => {
         console.log(err);
@@ -132,6 +175,19 @@ export default class FAQQuestion extends React.Component {
 
   onChangeLogo = (info) => {
     this.setState({ image: info.file.originFileObj });
+  };
+
+  deleteNews = (id) => {
+    axios
+      .delete(`${url}api/v1/super/faq/${id}`)
+      .then(() => {
+        this.refresh();
+        createLogs(`Удалил Часты задаваемые вопросы ID = ${id}`);
+        message.success("Успешно!");
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
 
   render() {
@@ -147,6 +203,8 @@ export default class FAQQuestion extends React.Component {
         title: "ID",
         dataIndex: "id",
         key: "id",
+        width: 100,
+        fixed: "left",
       },
       {
         title: "Тема вопроса",
@@ -157,21 +215,71 @@ export default class FAQQuestion extends React.Component {
         title: "Заголовок ",
         dataIndex: "title",
         key: "title",
+        render: (title) => (
+          <span
+            style={{
+              maxWidth: 110,
+              display: "inline-block",
+              wordBreak: "break-all",
+            }}
+          >
+            {title}
+          </span>
+        ),
       },
       {
         title: "Текст",
         dataIndex: "text",
         key: "text",
+        render: (text) => <TextArea value={text} rows={4} />,
       },
       {
         title: "Заголовок на казахском",
         dataIndex: "titleKz",
         key: "titleKz",
+        render: (titleKz) => (
+          <span
+            style={{
+              maxWidth: 110,
+              display: "inline-block",
+              wordBreak: "break-all",
+            }}
+          >
+            {titleKz}
+          </span>
+        ),
       },
       {
         title: "Текст",
         dataIndex: "textKz",
         key: "textKz",
+        render: (textKz) => <TextArea value={textKz} rows={4} />,
+      },
+      {
+        title: "Фото",
+        dataIndex: "image",
+        key: "image",
+        render: (image) => (
+          <img
+            style={{ width: 70 }}
+            src={
+              image
+                ? `http://91.201.214.201:8443/images/${image.imageName}`
+                : "https://sanitationsolutions.net/wp-content/uploads/2015/05/empty-image.png"
+            }
+            alt=""
+          />
+        ),
+      },
+      {
+        title: "Полезно",
+        dataIndex: "useful",
+        key: "useful",
+      },
+      {
+        title: "Бесполезно",
+        dataIndex: "notUseful",
+        key: "notUseful",
       },
       {
         title: "Создан",
@@ -188,30 +296,35 @@ export default class FAQQuestion extends React.Component {
         key: "action",
         render: (text, record) => (
           <span>
-            <a
-              onClick={() => {
-                this.setState({
-                  visibleUpdate: true,
-                  title: record.title,
-                  text: record.text,
-                  titleKz: record.titleKz,
-                  textKz: record.textKz,
-                  categoryId: record.categoryId,
-                  id: record.id,
-                });
-              }}
-            >
-              Изменить
-            </a>
+            {this.props.canEditOutcome && (
+              <a
+                onClick={() => {
+                  this.setState({
+                    visibleUpdate: true,
+                    title: record.title,
+                    text: record.text,
+                    titleKz: record.titleKz,
+                    textKz: record.textKz,
+                    image_old: record.image,
+                    categoryId: record.categoryId,
+                    id: record.id,
+                  });
+                }}
+              >
+                Изменить
+              </a>
+            )}
             <Divider type="vertical" />
-            <Popconfirm
-              title="Вы уверены что хотите удалить?"
-              onConfirm={() => this.deleteNews(record.id)}
-              okText="Да"
-              cancelText="Нет"
-            >
-              <a>Удалить</a>
-            </Popconfirm>
+            {this.props.canDeleteOutcome && (
+              <Popconfirm
+                title="Вы уверены что хотите удалить?"
+                onConfirm={() => this.deleteNews(record.id)}
+                okText="Да"
+                cancelText="Нет"
+              >
+                <a>Удалить</a>
+              </Popconfirm>
+            )}
           </span>
         ),
       },
@@ -222,11 +335,12 @@ export default class FAQQuestion extends React.Component {
         <Drawer
           title="Изменить вопрос"
           width={720}
-          onClose={() =>
+          onClose={() => {
             this.setState({
               visibleUpdate: false,
-            })
-          }
+            });
+            this.cleanUp();
+          }}
           onOk={this.updateFAQQuestion}
           visible={this.state.visibleUpdate}
         >
@@ -304,6 +418,20 @@ export default class FAQQuestion extends React.Component {
                 </Form.Item>
               </Col>
             </Row>
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item label="Прикрепить Новую фотографию">
+                  <input
+                    type="file"
+                    onChange={(e) => {
+                      this.setState({
+                        image_update: e.target.files[0],
+                      });
+                    }}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
           </Form>
           <div
             style={{
@@ -335,7 +463,10 @@ export default class FAQQuestion extends React.Component {
           cancelText="Закрыть"
           closable={false}
           onOk={this.createFAQQuestion}
-          onCancel={() => this.setState({ editModal: false })}
+          onCancel={() => {
+            this.setState({ editModal: false });
+            this.cleanUp();
+          }}
         >
           <Form>
             <Form.Item label="Тема вопроса">
@@ -375,6 +506,14 @@ export default class FAQQuestion extends React.Component {
                 rows={4}
               />
             </Form.Item>
+            <Form.Item label="Фото">
+              <Upload fileList={[]} {...props} onChange={this.onChangeLogo}>
+                <Button>
+                  <Icon type="upload" /> Нажмите чтобы загрузить
+                </Button>
+              </Upload>
+              <p>{this.state.image === "" || this.state.image.name}</p>
+            </Form.Item>
           </Form>
         </Modal>
         <Button.Group>
@@ -382,16 +521,22 @@ export default class FAQQuestion extends React.Component {
             <Icon type="reload" />
             Обновить
           </Button>
-          <Button
-            onClick={() => this.setState({ editModal: true })}
-            type="primary"
-          >
-            <Icon type="plus" />
-            Добавить
-          </Button>
+          {this.props.canEditOutcome && (
+            <Button
+              onClick={() => this.setState({ editModal: true })}
+              type="primary"
+            >
+              <Icon type="plus" />
+              Добавить
+            </Button>
+          )}
         </Button.Group>
         <Spin tip="Подождите..." spinning={this.state.spinning}>
-          <Table columns={columns} dataSource={this.state.faqCats} />
+          <Table
+            scroll={{ x: "calc(900px + 50%)", y: 480 }}
+            columns={columns}
+            dataSource={this.state.faqCats}
+          />
         </Spin>
       </Content>
     );

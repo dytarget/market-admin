@@ -22,6 +22,8 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { store } from "../../../store";
 import TextArea from "antd/lib/input/TextArea";
+import createLogs from "../../../utils/createLogs";
+import generateCitiesId from "../../../utils/generateCitiesId";
 
 const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
@@ -48,7 +50,7 @@ export default class AllPromosTable extends React.Component {
       Authorization: `Bearer ${token}`,
     };
     axios
-      .get(`${url}api/v1/promo`, {
+      .get(`${url}api/v1/promo${generateCitiesId(true)}`, {
         headers,
       })
       .then((res) => {
@@ -104,17 +106,11 @@ export default class AllPromosTable extends React.Component {
   };
 
   deletePromos = (id) => {
-    const { token } = store.getState().userReducer;
-    const headers = {
-      Authorization: `Bearer ${token}`,
-    };
-
     axios
-      .delete(`${url}api/v1/promo/${id}`, {
-        headers,
-      })
+      .delete(`${url}api/v1/promo/${id}`)
       .then(() => {
         this.refresh();
+        createLogs(`Удалил Баннер ID = ${id}`);
         message.success("Успешно!");
       })
       .catch((err) => {
@@ -133,9 +129,10 @@ export default class AllPromosTable extends React.Component {
         title: "Баннер",
         dataIndex: "image",
         key: "image",
+        width: 300,
         render: (image) => (
           <img
-            width={300}
+            width={280}
             height={200}
             src={
               image
@@ -152,7 +149,7 @@ export default class AllPromosTable extends React.Component {
         key: "type",
         render: (type) => {
           const data = {
-            MARKET: "Маркет",
+            MARKET: "В заказах",
             SIDE: "Боковой",
             ORDER: "В Заказах",
           };
@@ -163,6 +160,14 @@ export default class AllPromosTable extends React.Component {
         title: "Просмотры",
         dataIndex: "viewCount",
         key: "viewCount",
+      },
+      {
+        title: "ID Продавца",
+        dataIndex: "marketId",
+        key: "marketId",
+        render: (marketId) => (
+          <Link to={`/users/markets/${marketId}`}>{marketId}</Link>
+        ),
       },
       {
         title: "Ссылка",
@@ -178,18 +183,20 @@ export default class AllPromosTable extends React.Component {
         title: "Создан",
         dataIndex: "created",
         key: "created",
-        render: (created) => (
-          <span>
-            {created[2]}/{created[1]}/{created[0]}
-          </span>
-        ),
+        render: (created) =>
+          created && (
+            <span>
+              {created[2]}/{created[1]}/{created[0]}
+            </span>
+          ),
       },
       {
         title: "Действия",
         key: "action",
-        render: (text, record) => (
-          <span>
-            {/* <a
+        render: (text, record) =>
+          this.props.canDeleteOutcome && (
+            <span>
+              {/* <a
               onClick={() => {
                 this.setState({
                   visibleUpdate: true,
@@ -202,16 +209,16 @@ export default class AllPromosTable extends React.Component {
               Изменить
             </a>
             <Divider type="vertical" /> */}
-            <Popconfirm
-              title="Вы уверены что хотите удалить?"
-              onConfirm={() => this.deletePromos(record.id)}
-              okText="Да"
-              cancelText="Нет"
-            >
-              <a>Удалить</a>
-            </Popconfirm>
-          </span>
-        ),
+              <Popconfirm
+                title="Вы уверены что хотите удалить?"
+                onConfirm={() => this.deletePromos(record.id)}
+                okText="Да"
+                cancelText="Нет"
+              >
+                <a>Удалить</a>
+              </Popconfirm>
+            </span>
+          ),
       },
     ];
 
@@ -224,7 +231,7 @@ export default class AllPromosTable extends React.Component {
     };
     return (
       <Content style={{ padding: "0 24px", minHeight: 280 }}>
-        <h2 style={{ textAlign: "center" }}>Список всех реклам</h2>
+        <h2 style={{ textAlign: "center" }}>Список всех баннеров</h2>
         {/* <Drawer
           title="Изменить рекламу"
           width={720}
@@ -294,7 +301,7 @@ export default class AllPromosTable extends React.Component {
           </div>
         </Drawer> */}
         <Modal
-          title="Создать рекламу"
+          title="Создать баннер"
           visible={this.state.editModal}
           okText="Создать"
           cancelText="Закрыть"
@@ -343,7 +350,7 @@ export default class AllPromosTable extends React.Component {
         <Spin tip="Подождите..." spinning={this.state.spinning}>
           <Table
             columns={columns}
-            scroll={{ x: true }}
+            scroll={{ x: "calc(700px + 50%)", y: 480 }}
             dataSource={this.state.promos}
           />
         </Spin>

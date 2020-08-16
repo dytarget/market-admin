@@ -13,6 +13,7 @@ import {
 import Axios from "axios";
 import config from "../../../config/config";
 import { useState } from "react";
+import createLogs from "../../../utils/createLogs";
 
 export default class Price extends Component {
   state = {
@@ -27,7 +28,7 @@ export default class Price extends Component {
 
   refresh = () => {
     Axios.get(`${config.url}api/v1/price`).then(({ data }) => {
-      this.setState({ prices: data });
+      this.setState({ prices: data.sort((a, b) => b.id - a.id) });
     });
   };
 
@@ -53,6 +54,8 @@ export default class Price extends Component {
       body
     )
       .then((res) => {
+        createLogs(`Обновил Цену на ${name}`);
+
         message.success("Успешно изменён");
         this.setState({ updateModal: false });
         this.refresh();
@@ -106,7 +109,7 @@ export default class Price extends Component {
             columns={columns}
             dataSource={this.state.prices}
             bordered
-            scroll={{ x: true }}
+            scroll={{ y: 500 }}
             pagination={false}
           />
           <UpdateModal
@@ -152,15 +155,11 @@ const UpdateModal = ({ updateModal, updatingPrice, closeModal, handleOk }) => {
       {updatingPrice && (
         <Form layout="vertical" hideRequiredMark>
           <Form.Item label={`Название`}>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              type="text"
-            />
+            <Input value={name} type="text" />
           </Form.Item>
 
           {unit.indexOf("%") === -1 ? (
-            <Form.Item label={`Значение ${unit}pr`}>
+            <Form.Item label={`Значение ${unit}`}>
               <Input
                 value={parseInt(price)}
                 onChange={(e) => setPrice(parseInt(e.target.value))}
@@ -168,7 +167,7 @@ const UpdateModal = ({ updateModal, updatingPrice, closeModal, handleOk }) => {
               />
             </Form.Item>
           ) : (
-            <Form.Item label={`Значение ${unit}per`}>
+            <Form.Item label={`Значение ${unit}`}>
               <Input
                 value={parseInt(percentage)}
                 onChange={(e) => setPercentage(parseInt(e.target.value))}

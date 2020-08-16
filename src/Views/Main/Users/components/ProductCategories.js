@@ -14,12 +14,10 @@ import {
   Upload,
   message,
   Drawer,
-  Divider,
   Popconfirm,
-  Select,
 } from "antd";
 import axios from "axios";
-import { store } from "../../../store";
+import createLogs from "../../../../utils/createLogs";
 
 const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
@@ -43,13 +41,9 @@ export default class ProductCategories extends React.Component {
   }
 
   refresh = () => {
-    const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
-    const headers = {};
     axios
-      .get(`${url}api/v1/product-category`, {
-        headers,
-      })
+      .get(`${url}api/v1/product-category/market/${this.props.marketId}`)
       .then((res) => {
         this.setState({
           spinning: false,
@@ -66,31 +60,48 @@ export default class ProductCategories extends React.Component {
   };
 
   createCategory = () => {
-    const { token } = store.getState().userReducer;
     const authOptions = {
       method: "POST",
-      url: `${url}api/v1/super/product-category?name=${this.state.name}`,
-      headers: {},
+      url: `${url}api/v1/super/product-category`,
       json: true,
+      data: {
+        name: this.state.name,
+        marketId: this.props.marketId,
+      },
     };
     this.setState({ spinning: true, editModal: false });
     axios(authOptions)
       .then((res) => {
-        const file = new FormData();
-        file.append("file", this.state.image);
+        createLogs(
+          `Создал Категорию товаров (${this.state.name}) Продавца с id ${this.props.marketId}`
+        );
+        if (this.state.image !== "") {
+          const file = new FormData();
+          file.append("file", this.state.image);
 
-        const authOptions2 = {
-          method: "POST",
-          url: `${url}api/v1/image/product-category/${res.data.id}`,
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          data: file,
-        };
-        axios(authOptions2).then(() => {
+          const authOptions2 = {
+            method: "POST",
+            url: `${url}api/v1/image/product-category/${res.data.id}`,
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+            data: file,
+          };
+          axios(authOptions2).then(() => {
+            createLogs(
+              `Создал фотографию категорию товаров (${this.state.name}) Продавца с id ${this.props.marketId}`
+            );
+            this.refresh();
+
+            setTimeout(() => window.location.reload(), 1000);
+            message.success("Успешно!");
+          });
+        } else {
           this.refresh();
+          setTimeout(() => window.location.reload(), 1000);
+
           message.success("Успешно!");
-        });
+        }
       })
       .catch((err) => {
         console.log(err);
@@ -99,17 +110,22 @@ export default class ProductCategories extends React.Component {
   };
 
   handleUpdate = () => {
-    const { token } = store.getState().userReducer;
     const authOptions = {
       method: "PATCH",
-      url: `${url}api/v1/super/product-category/${this.state.id}?name=${this.state.name}`,
-      headers: {},
+      url: `${url}api/v1/super/product-category`,
+      data: {
+        name: this.state.name,
+        productCategoryId: this.state.id,
+      },
       json: true,
     };
     this.setState({ spinning: true, editModal: false });
     this.setState({ visibleUpdate: false });
     axios(authOptions)
       .then((res) => {
+        createLogs(
+          `Обновил категорию товаров (${this.state.name}) Продавца с id ${this.props.marketId}`
+        );
         if (this.state.image_update) {
           const file = new FormData();
           console.log(this.state.image_update);
@@ -126,11 +142,14 @@ export default class ProductCategories extends React.Component {
           };
           axios(authOptions2).then(() => {
             this.refresh();
+            setTimeout(() => window.location.reload(), 1000);
+
             message.success("Успешно!");
           });
         } else {
           this.setState({ visibleUpdate: false });
           this.refresh();
+          setTimeout(() => window.location.reload(), 1000);
         }
       })
       .catch((err) => {
@@ -139,19 +158,23 @@ export default class ProductCategories extends React.Component {
       });
   };
 
-  deleteCategory = (id) => {
-    const { token } = store.getState().userReducer;
+  deleteCategory = (id, name) => {
     this.setState({ spinning: true });
     const authOptions = {
       method: "DELETE",
       url: `${url}api/v1/super/product-category/${id}`,
-      headers: {},
     };
 
     axios(authOptions)
-      .then(() => this.refresh())
+      .then(() => {
+        createLogs(
+          `Удалил категорию товаров (${name}) Продавца с id ${this.props.marketId}`
+        );
+        this.refresh();
+        setTimeout(() => window.location.reload(), 1000);
+      })
       .catch(() => {
-        message.error("Вы не можете удалить, есть продукты в этой категории");
+        message.error("Вы не можете удалить, есть товары в этой категории");
         this.setState({ spinning: false });
       });
   };
@@ -207,28 +230,34 @@ export default class ProductCategories extends React.Component {
         key: "action",
         render: (text, record) => (
           <span>
-            <a
-              onClick={() => {
-                this.setState({
-                  name: record.categoryName,
-                  id: record.id,
-                  image_old: record.image,
-                  visibleUpdate: true,
-                });
-              }}
-            >
-              Изменить
-            </a>{" "}
+            {this.props.canEditUser && (
+              <a
+                onClick={() => {
+                  this.setState({
+                    name: record.categoryName,
+                    id: record.id,
+                    image_old: record.image,
+                    visibleUpdate: true,
+                  });
+                }}
+              >
+                Изменить
+              </a>
+            )}{" "}
             |{" "}
-            <Popconfirm
-              placement="top"
-              onConfirm={() => this.deleteCategory(record.id)}
-              title={"Удалить ?"}
-              okText="Yes"
-              cancelText="No"
-            >
-              <a>Удалить</a>
-            </Popconfirm>
+            {this.props.canDeleteUser && (
+              <Popconfirm
+                placement="top"
+                onConfirm={() =>
+                  this.deleteCategory(record.id, record.categoryName)
+                }
+                title={"Удалить ?"}
+                okText="Yes"
+                cancelText="No"
+              >
+                <a>Удалить</a>
+              </Popconfirm>
+            )}
           </span>
         ),
       },
@@ -236,9 +265,9 @@ export default class ProductCategories extends React.Component {
 
     return (
       <Content style={{ padding: "0 24px", minHeight: 280 }}>
-        <h2 style={{ textAlign: "center" }}>Список категории продуктов</h2>
+        <h2 style={{ textAlign: "center" }}>Список категорий товаров</h2>
         <Drawer
-          title="Изменить категорию продуктов"
+          title="Изменить категорию товаров"
           width={720}
           onClose={() =>
             this.setState({
@@ -308,7 +337,7 @@ export default class ProductCategories extends React.Component {
           </div>
         </Drawer>
         <Modal
-          title="Создать категорию продуктов"
+          title="Создать категорию товаров"
           visible={this.state.editModal}
           okText="Создать"
           cancelText="Закрыть"
@@ -338,17 +367,23 @@ export default class ProductCategories extends React.Component {
             <Icon type="reload" />
             Обновить
           </Button>
-          <Button
-            onClick={() => this.setState({ editModal: true })}
-            type="primary"
-          >
-            <Icon type="plus" />
-            Добавить категорию продуктов
-          </Button>
+          {this.props.canEditUser && (
+            <Button
+              onClick={() => this.setState({ editModal: true })}
+              type="primary"
+            >
+              <Icon type="plus" />
+              Добавить категорию товаров
+            </Button>
+          )}
         </Button.Group>
 
         <Spin tip="Подождите..." spinning={this.state.spinning}>
-          <Table columns={columns} dataSource={this.state.categories} />
+          <Table
+            columns={columns}
+            dataSource={this.state.categories}
+            scroll={{ x: "calc(700px + 50%)", y: 500 }}
+          />
         </Spin>
       </Content>
     );

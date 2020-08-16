@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { Component, Fragment } from "react";
 import { Layout, Menu, Breadcrumb, Icon } from "antd";
 import { connect } from "react-redux";
 import { Link, Route } from "react-router-dom";
@@ -12,7 +12,7 @@ import SidePromos from "./SidePromos";
 
 const { Content, Sider } = Layout;
 
-export class Outcome extends Component {
+class Outcome extends Component {
   componentDidMount() {
     if (window.location.pathname === "/outcome") {
       this.props.history.push("/outcome/promos");
@@ -20,6 +20,14 @@ export class Outcome extends Component {
   }
 
   render() {
+    const user = this.props.userReducer.user;
+    const canLookOutcome =
+      user && user.userRights && user.userRights.canLookOutcome === true;
+    const canEditOutcome =
+      user && user.userRights && user.userRights.canEditOutcome === true;
+    const canDeleteOutcome =
+      user && user.userRights && user.userRights.canDeleteOutcome === true;
+
     return (
       <div>
         <Content style={{ padding: "0 50px" }}>
@@ -34,13 +42,13 @@ export class Outcome extends Component {
                 style={{ height: "100%" }}
               >
                 <Menu.Item key="/outcome/all-promos">
-                  <Link to="/outcome/all-promos">Все рекламы</Link>
+                  <Link to="/outcome/all-promos">Все Баннеры</Link>
                 </Menu.Item>
                 <Menu.Item key="/outcome/promos">
-                  <Link to="/outcome/promos">Реклама в заказах</Link>
+                  <Link to="/outcome/promos">Баннеры в заказах</Link>
                 </Menu.Item>
                 <Menu.Item key="/outcome/side-promos">
-                  <Link to="/outcome/side-promos">Боковая Реклама</Link>
+                  <Link to="/outcome/side-promos">Боковой Баннер</Link>
                 </Menu.Item>
                 <Menu.Item key="/outcome/news">
                   <Link to="/outcome/news">Новости</Link>
@@ -59,25 +67,82 @@ export class Outcome extends Component {
               </Menu>
             </Sider>
             <Content style={{ padding: "0 24px", minHeight: 280 }}>
-              <Route path="/outcome/promos" exact component={PromosTable} />
-              <Route path="/outcome/side-promos" exact component={SidePromos} />
-              <Route path="/outcome/news" exact component={NewsTable} />
-              <Route
-                path="/outcome/notification"
-                exact
-                component={Notifications}
-              />
-              <Route path="/outcome/faq-category" exact component={FAQTheme} />
-              <Route
-                path="/outcome/faq-question"
-                exact
-                component={FAQQuestion}
-              />
-              <Route
-                path="/outcome/all-promos"
-                exact
-                component={AllPromosTable}
-              />
+              {canLookOutcome && (
+                <>
+                  <Route
+                    path="/outcome/promos"
+                    exact
+                    component={() => (
+                      <PromosTable
+                        canEditOutcome={canEditOutcome}
+                        canDeleteOutcome={canDeleteOutcome}
+                      />
+                    )}
+                  />
+                  <Route
+                    path="/outcome/side-promos"
+                    exact
+                    component={() => (
+                      <SidePromos
+                        canEditOutcome={canEditOutcome}
+                        canDeleteOutcome={canDeleteOutcome}
+                      />
+                    )}
+                  />
+                  <Route
+                    path="/outcome/news"
+                    exact
+                    component={() => (
+                      <NewsTable
+                        canEditOutcome={canEditOutcome}
+                        canDeleteOutcome={canDeleteOutcome}
+                      />
+                    )}
+                  />
+                  {canEditOutcome && (
+                    <Route
+                      path="/outcome/notification"
+                      exact
+                      component={() => (
+                        <Notifications
+                          canEditOutcome={canEditOutcome}
+                          canDeleteOutcome={canDeleteOutcome}
+                        />
+                      )}
+                    />
+                  )}
+                  <Route
+                    path="/outcome/faq-category"
+                    exact
+                    component={() => (
+                      <FAQTheme
+                        canEditOutcome={canEditOutcome}
+                        canDeleteOutcome={canDeleteOutcome}
+                      />
+                    )}
+                  />
+                  <Route
+                    path="/outcome/faq-question"
+                    exact
+                    component={() => (
+                      <FAQQuestion
+                        canEditOutcome={canEditOutcome}
+                        canDeleteOutcome={canDeleteOutcome}
+                      />
+                    )}
+                  />
+                  <Route
+                    path="/outcome/all-promos"
+                    exact
+                    component={() => (
+                      <AllPromosTable
+                        canEditOutcome={canEditOutcome}
+                        canDeleteOutcome={canDeleteOutcome}
+                      />
+                    )}
+                  />
+                </>
+              )}
             </Content>
           </Layout>
         </Content>

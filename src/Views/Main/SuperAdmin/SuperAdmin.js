@@ -7,6 +7,11 @@ import AdminSlidingTabs from "./AdminCategory";
 const { Content, Sider } = Layout;
 
 export class SuperAdmin extends Component {
+  componentDidMount() {
+    if (window.location.pathname === "/root") {
+      this.props.history.push("/root/main");
+    }
+  }
   render() {
     return (
       <div>
@@ -15,7 +20,7 @@ export class SuperAdmin extends Component {
             <Breadcrumb.Item>Super Админ</Breadcrumb.Item>
           </Breadcrumb>
           <Layout style={{ padding: "24px 0", background: "#fff" }}>
-            <AdminSlidingTabs />
+            <Route path="/root/main" exact component={AdminSlidingTabs} />
           </Layout>
         </Content>
       </div>

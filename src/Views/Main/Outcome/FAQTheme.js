@@ -6,22 +6,19 @@ import {
   Button,
   Layout,
   Spin,
-  Avatar,
   Input,
   Form,
   Modal,
   Col,
   Row,
-  Upload,
-  message,
   Drawer,
   Divider,
   Popconfirm,
+  message,
 } from "antd";
-import { Link } from "react-router-dom";
 import axios from "axios";
 import { store } from "../../../store";
-import TextArea from "antd/lib/input/TextArea";
+import createLogs from "../../../utils/createLogs";
 
 const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
@@ -40,7 +37,7 @@ export default class FAQTheme extends React.Component {
   }
 
   refresh = () => {
-    const { token } = store.getState().userReducer;
+    this.cleanUp();
     this.setState({ spinning: true });
     const headers = {};
     axios
@@ -55,6 +52,13 @@ export default class FAQTheme extends React.Component {
       .catch((err) => {
         console.log(err);
       });
+  };
+
+  cleanUp = () => {
+    this.setState({
+      name: this.state.name,
+      nameKz: this.state.nameKz,
+    });
   };
 
   createFAQTheme = () => {
@@ -74,7 +78,23 @@ export default class FAQTheme extends React.Component {
         }
       )
       .then((res) => {
+        createLogs(`Создал Тему часто задаваемых вопросов ID=${res.data?.id}`);
+
         this.refresh();
+        setTimeout(() => window.location.reload(), 1000);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  deleteNews = (id) => {
+    axios
+      .delete(`${url}api/v1/super/faq/category/${id}`)
+      .then(() => {
+        this.refresh();
+        createLogs(`Удалил Тему Вопросов ID = ${id}`);
+        message.success("Успешно!");
       })
       .catch((err) => {
         console.log(err);
@@ -99,7 +119,10 @@ export default class FAQTheme extends React.Component {
         }
       )
       .then((res) => {
+        createLogs(`Обновил Тему часто задаваемых вопросов ID=${res.data?.id}`);
+
         this.refresh();
+        setTimeout(() => window.location.reload(), 1000);
       })
       .catch((err) => {
         console.log(err);
@@ -155,27 +178,31 @@ export default class FAQTheme extends React.Component {
         key: "action",
         render: (text, record) => (
           <span>
-            <a
-              onClick={() => {
-                this.setState({
-                  visibleUpdate: true,
-                  name: record.name,
-                  nameKz: record.nameKz,
-                  id: record.id,
-                });
-              }}
-            >
-              Изменить
-            </a>
+            {this.props.canEditOutcome && (
+              <a
+                onClick={() => {
+                  this.setState({
+                    visibleUpdate: true,
+                    name: record.name,
+                    nameKz: record.nameKz,
+                    id: record.id,
+                  });
+                }}
+              >
+                Изменить
+              </a>
+            )}
             <Divider type="vertical" />
-            <Popconfirm
-              title="Вы уверены что хотите удалить?"
-              onConfirm={() => this.deleteNews(record.id)}
-              okText="Да"
-              cancelText="Нет"
-            >
-              <a>Удалить</a>
-            </Popconfirm>
+            {this.props.canDeleteOutcome && (
+              <Popconfirm
+                title="Вы уверены что хотите удалить?"
+                onConfirm={() => this.deleteNews(record.id)}
+                okText="Да"
+                cancelText="Нет"
+              >
+                <a>Удалить</a>
+              </Popconfirm>
+            )}
           </span>
         ),
       },
@@ -186,11 +213,12 @@ export default class FAQTheme extends React.Component {
         <Drawer
           title="Изменить тему"
           width={720}
-          onClose={() =>
+          onClose={() => {
             this.setState({
               visibleUpdate: false,
-            })
-          }
+            });
+            this.cleanUp();
+          }}
           onOk={this.updateFAQTheme}
           visible={this.state.visibleUpdate}
         >
@@ -248,7 +276,10 @@ export default class FAQTheme extends React.Component {
           cancelText="Закрыть"
           closable={false}
           onOk={this.createFAQTheme}
-          onCancel={() => this.setState({ editModal: false })}
+          onCancel={() => {
+            this.setState({ editModal: false });
+            this.cleanUp();
+          }}
         >
           <Form>
             <Form.Item label="Название">
@@ -268,16 +299,22 @@ export default class FAQTheme extends React.Component {
             <Icon type="reload" />
             Обновить
           </Button>
-          <Button
-            onClick={() => this.setState({ editModal: true })}
-            type="primary"
-          >
-            <Icon type="plus" />
-            Добавить
-          </Button>
+          {this.props.canEditOutcome && (
+            <Button
+              onClick={() => this.setState({ editModal: true })}
+              type="primary"
+            >
+              <Icon type="plus" />
+              Добавить
+            </Button>
+          )}
         </Button.Group>
         <Spin tip="Подождите..." spinning={this.state.spinning}>
-          <Table columns={columns} dataSource={this.state.faqCats} />
+          <Table
+            columns={columns}
+            dataSource={this.state.faqCats}
+            scroll={{ x: "calc(700px + 50%)", y: 480 }}
+          />
         </Spin>
       </Content>
     );

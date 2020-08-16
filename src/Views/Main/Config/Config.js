@@ -6,7 +6,6 @@ import Categories from "./Categories";
 import Specs from "./Specs";
 import Cities from "./Cities";
 import Price from "./Price";
-import ProductCategories from "./ProductCategories";
 import AboutService from "./AboutService";
 
 const { Content, Sider } = Layout;
@@ -29,7 +28,7 @@ export class Config extends Component {
             <Sider width={200} style={{ background: "#fff" }}>
               <Menu
                 mode="inline"
-                defaultSelectedKeys={["1"]}
+                defaultSelectedKeys={[`${window.location.pathname}`]}
                 style={{ height: "100%" }}
               >
                 <Menu.Item key="/config/categories">
@@ -44,11 +43,6 @@ export class Config extends Component {
                 <Menu.Item key="/config/price">
                   <Link to="/config/price">Цены</Link>
                 </Menu.Item>
-                <Menu.Item key="/config/product-categories">
-                  <Link to="/config/product-categories">
-                    Категории Продуктов
-                  </Link>
-                </Menu.Item>
                 <Menu.Item key="/config/about-service">
                   <Link to="/config/about-service">
                     Откуда вы узнали о нашем сервисе
@@ -61,11 +55,6 @@ export class Config extends Component {
               <Route path="/config/specs" exact component={Specs} />
               <Route path="/config/cities" exact component={Cities} />
               <Route path="/config/price" exact component={Price} />
-              <Route
-                path="/config/product-categories"
-                exact
-                component={ProductCategories}
-              />
               <Route
                 path="/config/about-service"
                 exact

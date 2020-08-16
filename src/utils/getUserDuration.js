@@ -52,7 +52,7 @@ export default (timestamp) => {
 
   let message = `${getYear(years)}${getMonth(months)}${getDay(days)}`;
 
-  if (message.length === 0) {
+  if (message.length === 0 || message === "undefinedundefinedundefined") {
     message = "Сегодня";
   }
   return message;

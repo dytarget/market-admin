@@ -17,17 +17,23 @@ import {
   Drawer,
   Divider,
   Popconfirm,
+  Select,
 } from "antd";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { store } from "../../../store";
 import TextArea from "antd/lib/input/TextArea";
 import sendPushNotificationToAll from "../../../utils/sendPushNotificationToAll";
+import createLogs from "../../../utils/createLogs";
+import generateCitiesId from "../../../utils/generateCitiesId";
+import { connect } from "react-redux";
+import config from "../../../config/config";
+import sendPushNotificationToMasters from "../../../utils/sendPushNotificationToMasters";
 
 const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
-export default class NewsTable extends React.Component {
+class NewsTable extends React.Component {
   state = {
     news: [],
     spinning: false,
@@ -39,6 +45,9 @@ export default class NewsTable extends React.Component {
     image_old: "",
     image_update: "",
     youtubeVideo: "",
+    cityId: 0,
+    cityIdUpdate: "",
+    cities: [],
   };
 
   componentDidMount() {
@@ -46,19 +55,45 @@ export default class NewsTable extends React.Component {
   }
 
   refresh = () => {
-    const { token } = store.getState().userReducer;
     this.setState({ spinning: true });
-
+    this.cleanUp();
     axios
-      .get(`${url}api/v1/news/all`)
+      .get(`${url}api/v1/news/all${generateCitiesId(true)}`)
       .then((res) => {
         console.log(res.data);
 
-        this.setState({ spinning: false, news: res.data.news });
+        this.setState({
+          spinning: false,
+          news: res.data.news.sort((a, b) => b.id - a.id),
+        });
       })
       .catch((err) => {
         console.log(err);
       });
+
+    axios.get(`${url}api/v1/city/all`).then((res) => {
+      const { cities, isSuperAdmin } = this.props.userReducer.user;
+      const citiesFiltered = isSuperAdmin
+        ? res.data.cities
+        : res.data.cities.filter((city) => cities.includes(city.id));
+      this.setState({
+        cities: citiesFiltered,
+      });
+    });
+  };
+
+  cleanUp = () => {
+    this.setState({
+      header: "",
+      text: "",
+      headerKz: "",
+      textKz: "",
+      youtubeVideo: "",
+      image: "",
+      image_old: "",
+      image_update: "",
+      cityId: 0,
+    });
   };
 
   createNews = () => {
@@ -68,8 +103,8 @@ export default class NewsTable extends React.Component {
       text,
       title,
     };
-    const { token } = store.getState().userReducer;
-    const headers = {};
+
+    message.warn("Подождите !");
 
     axios
       .post(`${url}api/v1/news`, {
@@ -78,18 +113,12 @@ export default class NewsTable extends React.Component {
         headerKz: this.state.titleKz,
         textKz: this.state.textKz,
         youtubeVideo: this.state.youtubeVideo,
+        cityId: this.state.cityId,
       })
       .then((res) => {
         console.log(res.data);
-        sendPushNotificationToAll(
-          ``,
-          `Новая запись в новостях`,
-          null,
-          "News",
-          0,
-          "client",
-          "bells"
-        );
+        createLogs(`Создал новости ID=${res.data?.id}`);
+
         const file = new FormData();
         file.append("file", this.state.image);
 
@@ -102,10 +131,7 @@ export default class NewsTable extends React.Component {
           },
         };
 
-        axios(authOptions).then((res) => {
-          this.refresh();
-          this.setState({ editModal: false });
-        });
+        this.sendNotsToCustomers(this.state.cityId, authOptions);
       })
       .catch((err) => {
         console.log(err);
@@ -114,10 +140,41 @@ export default class NewsTable extends React.Component {
     console.log(obj);
   };
 
-  updateNews = () => {
-    const { token } = store.getState().userReducer;
-    const headers = {};
+  sendNotsToCustomers = (cityId, authOptions) => {
+    axios.get(`${config.url}api/v1/user`).then((res) => {
+      let arr = [];
 
+      res.data.users.forEach((user) => {
+        if (user.city && user.city.id === cityId) {
+          arr.push(user.id);
+        }
+      });
+
+      if (arr.length > 0) {
+        sendPushNotificationToMasters(
+          ``,
+          "",
+          `Новая запись в новостях`,
+          `Жаңа жаңалық`,
+          arr,
+          "News",
+          "",
+          "client",
+          "bells"
+        );
+      }
+
+      axios(authOptions).then((res) => {
+        this.refresh();
+        message.success("Успешно !");
+        setTimeout(() => window.location.reload(), 1000);
+
+        this.setState({ editModal: false });
+      });
+    });
+  };
+
+  updateNews = () => {
     this.setState({ visibleUpdate: false, spinning: true });
 
     axios
@@ -127,8 +184,11 @@ export default class NewsTable extends React.Component {
         headerKz: this.state.title_updateKz,
         textKz: this.state.text_updateKz,
         youtubeVideo: this.state.youtubeVideo,
+        cityId: this.state.cityIdUpdate,
       })
       .then((res) => {
+        createLogs(`Обновил новости ID=${res.data?.id}`);
+
         console.log(res.data);
         if (this.state.image_update !== "") {
           const file = new FormData();
@@ -145,10 +205,13 @@ export default class NewsTable extends React.Component {
 
           axios(authOptions).then((res) => {
             this.refresh();
+            setTimeout(() => window.location.reload(), 1000);
+
             this.setState({ visibleUpdate: false });
           });
         } else {
           this.refresh();
+          setTimeout(() => window.location.reload(), 1000);
         }
       })
       .catch((err) => {
@@ -164,6 +227,19 @@ export default class NewsTable extends React.Component {
     this.setState({ image: info.file.originFileObj });
   };
 
+  deleteNews = (id) => {
+    axios
+      .delete(`${url}api/v1/news/${id}`)
+      .then(() => {
+        this.refresh();
+        createLogs(`Удалил Новости ID = ${id}`);
+        message.success("Успешно!");
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
   render() {
     const props = {
       name: "file",
@@ -177,6 +253,8 @@ export default class NewsTable extends React.Component {
         title: "ID",
         dataIndex: "id",
         key: "id",
+        width: 100,
+        fixed: "left",
       },
       {
         title: "Фото",
@@ -217,6 +295,12 @@ export default class NewsTable extends React.Component {
         render: (textKz) => <TextArea value={textKz} rows={4} />,
       },
       {
+        title: "Город",
+        dataIndex: "city",
+        key: "city",
+        render: (city) => <span>{city?.cityName}</span>,
+      },
+      {
         title: "Youtube Video",
         dataIndex: "youtubeVideo",
         key: "youtubeVideo",
@@ -239,31 +323,36 @@ export default class NewsTable extends React.Component {
         key: "action",
         render: (text, record) => (
           <span>
-            <a
-              onClick={() => {
-                this.setState({
-                  visibleUpdate: true,
-                  title_update: record.header,
-                  text_update: record.text,
-                  title_updateKz: record.headerKz,
-                  text_updateKz: record.textKz,
-                  image_old: record.image,
-                  youtubeVideo: record.youtubeVideo,
-                  id: record.id,
-                });
-              }}
-            >
-              Изменить
-            </a>
+            {this.props.canEditOutcome && (
+              <a
+                onClick={() => {
+                  this.setState({
+                    visibleUpdate: true,
+                    title_update: record.header,
+                    text_update: record.text,
+                    title_updateKz: record.headerKz,
+                    text_updateKz: record.textKz,
+                    image_old: record.image,
+                    youtubeVideo: record.youtubeVideo,
+                    cityIdUpdate: record.city ? record.city.id : "",
+                    id: record.id,
+                  });
+                }}
+              >
+                Изменить
+              </a>
+            )}
             <Divider type="vertical" />
-            <Popconfirm
-              title="Вы уверены что хотите удалить?"
-              onConfirm={() => this.deleteNews(record.id)}
-              okText="Да"
-              cancelText="Нет"
-            >
-              <a>Удалить</a>
-            </Popconfirm>
+            {this.props.canDeleteOutcome && (
+              <Popconfirm
+                title="Вы уверены что хотите удалить?"
+                onConfirm={() => this.deleteNews(record.id)}
+                okText="Да"
+                cancelText="Нет"
+              >
+                <a>Удалить</a>
+              </Popconfirm>
+            )}
           </span>
         ),
       },
@@ -274,15 +363,28 @@ export default class NewsTable extends React.Component {
         <Drawer
           title="Изменить новость"
           width={720}
-          onClose={() =>
+          onClose={() => {
             this.setState({
               visibleUpdate: false,
-            })
-          }
+            });
+            this.cleanUp();
+          }}
           onOk={this.updateNews}
           visible={this.state.visibleUpdate}
         >
           <Form layout="vertical" hideRequiredMark>
+            <Form.Item label="Город">
+              <Select
+                onChange={(e) => {
+                  this.setState({ cityIdUpdate: e });
+                }}
+                defaultValue={this.state.cityIdUpdate}
+              >
+                {this.state.cities.map((city) => (
+                  <Select.Option value={city.id}>{city.cityName}</Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
             <Row gutter={16}>
               <Col span={24}>
                 <Form.Item label="Изменить Заголовок">
@@ -390,9 +492,23 @@ export default class NewsTable extends React.Component {
           cancelText="Закрыть"
           closable={false}
           onOk={this.createNews}
-          onCancel={() => this.setState({ editModal: false })}
+          onCancel={() => {
+            this.setState({ editModal: false });
+            this.cleanUp();
+          }}
         >
           <Form>
+            <Form.Item label="Город">
+              <Select
+                onChange={(e) => {
+                  this.setState({ cityId: e });
+                }}
+              >
+                {this.state.cities.map((city) => (
+                  <Select.Option value={city.id}>{city.cityName}</Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
             <Form.Item label="Заголовок">
               <Input
                 onChange={(e) => this.setState({ title: e.target.value })}
@@ -437,18 +553,26 @@ export default class NewsTable extends React.Component {
             <Icon type="reload" />
             Обновить
           </Button>
-          <Button
-            onClick={() => this.setState({ editModal: true })}
-            type="primary"
-          >
-            <Icon type="plus" />
-            Добавить
-          </Button>
+          {this.props.canEditOutcome && (
+            <Button
+              onClick={() => this.setState({ editModal: true })}
+              type="primary"
+            >
+              <Icon type="plus" />
+              Добавить
+            </Button>
+          )}
         </Button.Group>
         <Spin tip="Подождите..." spinning={this.state.spinning}>
-          <Table columns={columns} dataSource={this.state.news} />
+          <Table
+            columns={columns}
+            dataSource={this.state.news}
+            scroll={{ x: "calc(700px + 50%)", y: 480 }}
+          />
         </Spin>
       </Content>
     );
   }
 }
+
+export default connect(({ userReducer }) => ({ userReducer }), {})(NewsTable);

@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { store } from "../../../store";
 import TextArea from "antd/lib/input/TextArea";
+import { connect } from "react-redux";
+import generateCitiesId from "../../../utils/generateCitiesId";
 
 const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
@@ -15,11 +17,6 @@ const types = {
 };
 
 const columns = [
-  {
-    title: "ID",
-    dataIndex: "id",
-    key: "id",
-  },
   {
     title: "Кто отправил",
     dataIndex: "user",
@@ -75,7 +72,7 @@ const columns = [
   },
 ];
 
-export default class UserReview extends React.Component {
+class UserReview extends React.Component {
   state = {
     reviews: [],
     spinning: false,
@@ -86,26 +83,28 @@ export default class UserReview extends React.Component {
   }
 
   refresh = () => {
-    const { token } = store.getState().userReducer;
-    this.setState({ spinning: true });
-    const headers = {};
-    axios
-      .get(`${url}api/v1/support`, {
-        headers,
-      })
-      .then((res) => {
-        console.log(res.data);
-        this.setState({ spinning: false, reviews: res.data.supportMessages });
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    const user = this.props.userReducer.user;
+    if (user && user.userRights && user.userRights.canLookIncome === true) {
+      this.setState({ spinning: true });
+      axios
+        .get(`${url}api/v1/support${generateCitiesId(true)}`)
+        .then((res) => {
+          console.log(res.data);
+          this.setState({
+            spinning: false,
+            reviews: res.data.supportMessages.reverse(),
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
   };
 
   render() {
     return (
       <Content style={{ padding: "0 24px", minHeight: 280 }}>
-        <h2 style={{ textAlign: "center" }}>Список обращении</h2>
+        <h2 style={{ textAlign: "center" }}>Список обращений</h2>
         <Button.Group>
           <Button onClick={this.refresh} type="primary">
             <Icon type="reload" />
@@ -113,9 +112,15 @@ export default class UserReview extends React.Component {
           </Button>
         </Button.Group>
         <Spin tip="Подождите..." spinning={this.state.spinning}>
-          <Table columns={columns} dataSource={this.state.reviews} />
+          <Table
+            columns={columns}
+            dataSource={this.state.reviews}
+            pagination={{ pageSize: 7 }}
+          />
         </Spin>
       </Content>
     );
   }
 }
+
+export default connect(({ userReducer }) => ({ userReducer }), {})(UserReview);

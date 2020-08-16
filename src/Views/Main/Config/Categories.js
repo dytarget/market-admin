@@ -20,6 +20,7 @@ import {
 } from "antd";
 import axios from "axios";
 import { store } from "../../../store";
+import createLogs from "../../../utils/createLogs";
 
 const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
@@ -45,7 +46,7 @@ export default class Categories extends React.Component {
   }
 
   refresh = () => {
-    const { token } = store.getState().userReducer;
+    this.cleanUp();
     this.setState({ spinning: true });
     const headers = {};
     axios
@@ -64,6 +65,19 @@ export default class Categories extends React.Component {
     this.setState({ image: info.file.originFileObj });
   };
 
+  cleanUp = () => {
+    this.setState({
+      categoryName: "",
+      categoryNameKz: "",
+      priority: "",
+      id: "",
+      image: "",
+      name_update: "",
+      image_old: "",
+      image_update: "",
+    });
+  };
+
   createCategory = () => {
     const { token } = store.getState().userReducer;
     const authOptions = {
@@ -80,21 +94,31 @@ export default class Categories extends React.Component {
     this.setState({ spinning: true, editModal: false });
     axios(authOptions)
       .then((res) => {
-        const file = new FormData();
-        file.append("file", this.state.image);
+        createLogs(`Создал категорию ID=${res.data.id}`);
 
-        const authOptions2 = {
-          method: "POST",
-          url: `${url}api/v1/image/category/${res.data.id}`,
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          data: file,
-        };
-        axios(authOptions2).then(() => {
+        if (this.state.image !== "") {
+          const file = new FormData();
+          file.append("file", this.state.image);
+
+          const authOptions2 = {
+            method: "POST",
+            url: `${url}api/v1/image/category/${res.data.id}`,
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+            data: file,
+          };
+          axios(authOptions2).then(() => {
+            this.refresh();
+            this.cleanUp();
+            setTimeout(() => window.location.reload(), 1000);
+
+            message.success("Успешно!");
+          });
+        } else {
           this.refresh();
           message.success("Успешно!");
-        });
+        }
       })
       .catch((err) => {
         console.log(err);
@@ -103,7 +127,6 @@ export default class Categories extends React.Component {
   };
 
   handleUpdate = () => {
-    const { token } = store.getState().userReducer;
     const authOptions = {
       method: "PATCH",
       url: `${url}api/v1/category/${this.state.id}`,
@@ -115,27 +138,38 @@ export default class Categories extends React.Component {
       },
       json: true,
     };
-    this.setState({ spinning: true, editModal: false });
+    this.setState({ spinning: true, visibleUpdate: false });
     axios(authOptions)
       .then((res) => {
-        const file = new FormData();
-        console.log(this.state.image_update);
+        createLogs(`Обновил категорию ID=${res.data.id}`);
 
-        file.append("file", this.state.image_update[0]);
+        if (this.state.image_update !== "") {
+          const file = new FormData();
+          console.log(this.state.image_update);
 
-        const authOptions2 = {
-          method: "POST",
-          url: `${url}api/v1/image/category/${this.state.id}`,
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          data: file,
-        };
-        axios(authOptions2).then(() => {
+          file.append("file", this.state.image_update[0]);
+
+          const authOptions2 = {
+            method: "POST",
+            url: `${url}api/v1/image/category/${this.state.id}`,
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+            data: file,
+          };
+          axios(authOptions2).then(() => {
+            this.refresh();
+            this.cleanUp();
+            setTimeout(() => window.location.reload(), 1000);
+
+            message.success("Успешно!");
+          });
+        } else {
           this.refresh();
-          this.setState({});
+          this.cleanUp();
+
           message.success("Успешно!");
-        });
+        }
       })
       .catch((err) => {
         console.log(err);
@@ -143,8 +177,7 @@ export default class Categories extends React.Component {
       });
   };
 
-  deleteCategory = (id) => {
-    const { token } = store.getState().userReducer;
+  deleteCategory = (id, name) => {
     this.setState({ spinning: true });
     const authOptions = {
       method: "DELETE",
@@ -153,7 +186,12 @@ export default class Categories extends React.Component {
     };
 
     axios(authOptions)
-      .then(() => this.refresh())
+      .then((res) => {
+        createLogs(`Удалил категорию ID=${res.data.id}`);
+
+        this.refresh();
+        setTimeout(() => window.location.reload(), 1000);
+      })
       .catch(() => {
         message.error(
           "Вы не можете удалить, есть специализации в этой категории"
@@ -173,14 +211,10 @@ export default class Categories extends React.Component {
 
     const columns = [
       {
-        title: "ID",
-        dataIndex: "id",
-        key: "id",
-      },
-      {
         title: "Фото",
         dataIndex: "avatar",
         key: "avatar",
+        fixed: "left",
         render: (avatar) => (
           <img
             style={{ width: 80 }}
@@ -192,6 +226,11 @@ export default class Categories extends React.Component {
             alt=""
           />
         ),
+      },
+      {
+        title: "ID",
+        dataIndex: "id",
+        key: "id",
       },
       {
         title: "Название Ru",
@@ -248,7 +287,9 @@ export default class Categories extends React.Component {
             |{" "}
             <Popconfirm
               placement="top"
-              onConfirm={() => this.deleteCategory(record.id)}
+              onConfirm={() =>
+                this.deleteCategory(record.id, record.categoryName)
+              }
               title={"Удалить ?"}
               okText="Yes"
               cancelText="No"
@@ -262,15 +303,16 @@ export default class Categories extends React.Component {
 
     return (
       <Content style={{ padding: "0 24px", minHeight: 280 }}>
-        <h2 style={{ textAlign: "center" }}>Список категории</h2>
+        <h2 style={{ textAlign: "center" }}>Список категорий</h2>
         <Drawer
           title="Изменить категорию"
           width={720}
-          onClose={() =>
+          onClose={() => {
             this.setState({
               visibleUpdate: false,
-            })
-          }
+            });
+            this.cleanUp();
+          }}
           onOk={this.handleUpdate}
           visible={this.state.visibleUpdate}
         >
@@ -355,24 +397,32 @@ export default class Categories extends React.Component {
           okText="Создать"
           cancelText="Закрыть"
           closable={false}
-          onOk={() => this.createCategory()}
-          onCancel={() => this.setState({ editModal: false })}
+          onOk={() => {
+            this.createCategory();
+          }}
+          onCancel={() => {
+            this.setState({ editModal: false });
+            this.cleanUp();
+          }}
         >
           <Form>
             <Form.Item label="Название на KZ">
               <Input
+                value={this.state.nameKz}
                 onChange={(e) => this.setState({ nameKz: e.target.value })}
               />
             </Form.Item>
 
             <Form.Item label="Название на RU">
               <Input
+                value={this.state.nameRu}
                 onChange={(e) => this.setState({ nameRu: e.target.value })}
               />
             </Form.Item>
 
             <Form.Item label="Приоритет">
               <Input
+                value={this.state.priority}
                 onChange={(e) => this.setState({ priority: e.target.value })}
                 type="numeric"
               />
@@ -403,7 +453,11 @@ export default class Categories extends React.Component {
         </Button.Group>
 
         <Spin tip="Подождите..." spinning={this.state.spinning}>
-          <Table columns={columns} dataSource={this.state.categories} />
+          <Table
+            columns={columns}
+            dataSource={this.state.categories}
+            scroll={{ x: "calc(600px + 70%)", y: 500 }}
+          />
         </Spin>
       </Content>
     );

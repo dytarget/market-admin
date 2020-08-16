@@ -25,6 +25,7 @@ import { store } from "../../../store";
 
 import { PromosList } from "../components/PromosList";
 import { ProductCategoryList } from "../components/ProductCategory";
+import createLogs from "../../../utils/createLogs";
 
 const { Content } = Layout;
 const { TextArea } = Input;
@@ -65,18 +66,24 @@ export class Products extends Component {
     };
   }
 
+  cleanUp = () => {
+    this.setState({
+      categoryId: "",
+      cost: "",
+      description: "",
+      marketId: "",
+      name: "",
+      prodImage: "",
+    });
+  };
+
   componentDidMount() {
     this.setState({ spinning: true });
     this.refresh();
   }
 
   refresh = () => {
-    axios
-      .get(`${url}api/v1/product-category`, {
-        headers: {},
-      })
-      .then((res) => this.setState({ prodCats: res.data.productCategories }));
-
+    this.cleanUp();
     axios
       .get(`${url}api/v1/product-category/market/${this.state.market.id}`, {
         headers: {
@@ -84,15 +91,10 @@ export class Products extends Component {
         },
       })
       .then((res) => {
-        const containingIds = [];
-        const result = [];
-        res.data.productCategories.map((cat) => {
-          if (!containingIds.includes(cat.id)) {
-            containingIds.push(cat.id);
-            result.push(cat);
-          }
+        this.setState({
+          marketCategories: res.data.productCategories,
+          spinning: false,
         });
-        this.setState({ marketCategories: result, spinning: false });
       })
       .catch((err) => {
         console.log(err);
@@ -109,6 +111,7 @@ export class Products extends Component {
       })
       .then((res) => {
         this.refresh();
+        setTimeout(window.location.reload(), 1000);
       })
       .catch((err) => {
         console.log(err);
@@ -128,40 +131,6 @@ export class Products extends Component {
       .catch((err) => {
         console.log(err);
       });
-  };
-
-  updateMasterStatus = (status) => {
-    this.setState({ spinning: true });
-
-    axios
-      .put(`${url}api/v1/user/${this.state.master.username}`, { status })
-      .then((res) => {
-        this.refresh();
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
-
-  updateMasterType = () => {
-    this.setState({ spinning: true });
-
-    const { masterType, orgName, master } = this.state;
-    if (masterType === "COMPANY" && orgName.length < 1) {
-      message.error("Заполните организацю мастера");
-    } else {
-      axios
-        .put(`${url}api/v1/user/${master.username}`, {
-          masterType,
-          orgName,
-        })
-        .then((res) => {
-          this.refresh();
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
   };
 
   onChangePromoImage = (info) => {
@@ -184,41 +153,7 @@ export class Products extends Component {
       });
   };
 
-  createPromo = () => {
-    this.setState({ spinning: true, createPromoModal: false });
-
-    axios
-      .post(
-        `${url}api/v1/promo?link=${this.state.link}&marketId=${this.props.match.params.id}`,
-        {},
-        {
-          headers: {},
-        }
-      )
-      .then((res) => {
-        console.log(res.data);
-        const files = new FormData();
-        files.append("file", this.state.promoImage);
-        axios
-          .post(`${url}api/v1/image/promo/${res.data.id}`, files, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          })
-          .then((res) => {
-            this.refresh();
-          })
-          .catch((err) => {
-            console.log(err);
-          });
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
-
   createProduct = () => {
-    const token = store.getState().userReducer.token;
     this.setState({ createProdModal: false });
     axios
       .post(
@@ -235,6 +170,9 @@ export class Products extends Component {
         }
       )
       .then((res) => {
+        createLogs(
+          `Создал Продукт ${this.state.prodName} Продавец=${this.state.market.id}`
+        );
         const file = new FormData();
         file.append("file", this.state.prodImage);
 
@@ -248,6 +186,8 @@ export class Products extends Component {
         };
         axios(authOptions2).then(() => {
           this.refresh();
+          setTimeout(() => window.location.reload(), 1000);
+
           message.success("Успешно!");
         });
       });
@@ -297,7 +237,7 @@ export class Products extends Component {
                         this.setState({ prodCatId: categoryId })
                       }
                     >
-                      {this.state.prodCats.map((cat) => (
+                      {this.state.marketCategories.map((cat) => (
                         <Select.Option value={cat.id}>
                           {cat.categoryName}
                         </Select.Option>
@@ -351,15 +291,22 @@ export class Products extends Component {
                 </Form>
               </Modal>
 
-              <Button onClick={() => this.setState({ createProdModal: true })}>
-                Добавить товар
-              </Button>
+              {this.props.canEditUser && (
+                <Button
+                  type="primary"
+                  onClick={() => this.setState({ createProdModal: true })}
+                >
+                  Добавить товар
+                </Button>
+              )}
               <Row>
                 <Col span={24}>
                   <ProductCategoryList
                     list={this.state.marketCategories}
                     marketId={market.id}
                     refresh={this.refresh}
+                    canEditUser={this.props.canEditUser}
+                    canDeleteUser={this.props.canDeleteUser}
                   />
                 </Col>
               </Row>

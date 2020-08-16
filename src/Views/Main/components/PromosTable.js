@@ -22,6 +22,7 @@ export const PromosTable = ({ promos = [] }) => {
       title: "Баннер",
       dataIndex: "image",
       key: "image",
+      width: 250,
       render: (image) => (
         <img
           width={230}
@@ -53,8 +54,9 @@ export const PromosTable = ({ promos = [] }) => {
       key: "type",
       render: (type) => {
         const data = {
-          MARKET: "Маркет",
-          ORDER: "Лента",
+          SIDE: "Боковое меню",
+          MARKET: "В заказах",
+          ORDER: "В заказах",
         };
         return <span>{data[type]}</span>;
       },
@@ -65,9 +67,9 @@ export const PromosTable = ({ promos = [] }) => {
       key: "viewCount",
     },
     {
-      title: "Расход за рекламу",
-      dataIndex: "gg",
-      key: "gg",
+      title: "Расход за баннеров",
+      dataIndex: "consumption",
+      key: "consumption",
     },
   ];
 
@@ -77,7 +79,7 @@ export const PromosTable = ({ promos = [] }) => {
         bordered
         columns={columns}
         dataSource={promos}
-        scroll={{ x: true }}
+        scroll={{ x: "calc(700px + 50%)", y: 500 }}
       />
     </div>
   );

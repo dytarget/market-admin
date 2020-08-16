@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useEffect } from "react";
 import Axios from "axios";
 import config from "../../../../config/config";
+import createLogs from "../../../../utils/createLogs";
 
 export const PayForBanner = ({
   id,
@@ -14,35 +15,46 @@ export const PayForBanner = ({
 }) => {
   const [price, setPrice] = useState();
   const [amount, setAmount] = useState(0);
+  const [amountVerify, setAmountVerify] = useState(0);
   const [spinning, setSpinning] = useState(false);
 
   const activateMarket = () => {
-    if (amount && amount > 0) {
-      const body = {
-        amount,
-        marketId: id,
-        priceId: price.id,
-        type: "BANNER",
-      };
+    if (amount && parseInt(amount, 10) > 0) {
+      if (amount === amountVerify) {
+        const body = {
+          amount,
+          marketId: id,
+          priceId: price.id,
+          type: "BANNER",
+        };
 
-      Axios.post(`${config.url}api/v1/transaction`, body)
-        .then((res) => {
-          const body = {
-            bannerBalance: bannerBalance + amount,
-          };
-          Axios.patch(`${config.url}api/v1/market/${id}`, body)
-            .then(() => {
-              message.success("Успешно");
-              refresh();
-              modalValue(false);
-            })
-            .catch((err) => {
-              message.error("Ошибка");
-            });
-        })
-        .catch((err) => {
-          message.error("Ошибка");
-        });
+        Axios.post(`${config.url}api/v1/transaction`, body)
+          .then((res) => {
+            const body = {
+              bannerBalance: parseInt(bannerBalance, 10) + parseInt(amount, 10),
+            };
+            Axios.patch(`${config.url}api/v1/market/${id}`, body)
+              .then(() => {
+                createLogs(
+                  `Пополнил счет за релкаму Продавца с id ${id} на сумму ${amount}`
+                );
+
+                message.success("Успешно");
+                refresh();
+                setTimeout(() => window.location.reload(), 1000);
+
+                modalValue(false);
+              })
+              .catch((err) => {
+                message.error("Ошибка");
+              });
+          })
+          .catch((err) => {
+            message.error("Ошибка");
+          });
+      } else {
+        message.error("Не совпадают суммы!");
+      }
     } else {
       message.error("Укажите сумму");
     }
@@ -79,6 +91,12 @@ export const PayForBanner = ({
               <Input
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
+              />
+            </Form.Item>
+            <Form.Item label="Введите сумму еще раз">
+              <Input
+                value={amountVerify}
+                onChange={(e) => setAmountVerify(e.target.value)}
               />
             </Form.Item>
           </Form>

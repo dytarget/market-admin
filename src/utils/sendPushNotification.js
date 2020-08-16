@@ -5,7 +5,9 @@ const url = "http://91.201.214.201:8443";
 
 const sendPushNotification = (
   body,
+  bodyKz,
   title,
+  titleKz,
   userId,
   screen,
   itemId,
@@ -16,7 +18,6 @@ const sendPushNotification = (
   clientId,
   masterId
 ) => {
-  const { token } = store.getState().userReducer;
   const pushBody = {
     userIds: [userId],
     title,
@@ -27,6 +28,8 @@ const sendPushNotification = (
         screen,
         title,
         body,
+        bodyKz,
+        titleKz,
         type,
         mode,
       },

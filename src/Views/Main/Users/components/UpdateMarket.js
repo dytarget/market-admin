@@ -15,6 +15,7 @@ import {
 import TextArea from "antd/lib/input/TextArea";
 import { store } from "../../../../store";
 import Axios from "axios";
+import createLogs from "../../../../utils/createLogs";
 
 const url = "http://91.201.214.201:8443/";
 
@@ -22,6 +23,7 @@ export default class UpdateMarket extends Component {
   constructor(props) {
     super(props);
     let specs = props.market.specializations.map((elem) => elem.id);
+    const { coordinates } = props.market;
     this.state = {
       about: props.market.about,
       address: props.market.address,
@@ -36,7 +38,13 @@ export default class UpdateMarket extends Component {
       email: props.market.email,
       name: props.market.marketName,
       phone: props.market.phone,
-      cityId: props.market.city.id,
+      cityId: props.market?.city?.id,
+      latitude: coordinates
+        ? JSON.parse(coordinates?.toLowerCase()).latitude
+        : null,
+      longitude: coordinates
+        ? JSON.parse(coordinates?.toLowerCase()).longitude
+        : null,
       specsId: specs,
       spinning: false,
       cities: [],
@@ -56,8 +64,9 @@ export default class UpdateMarket extends Component {
   createMarket = () => {
     this.setState({ spinning: true });
     message.warning("Подождите");
-    const { token } = store.getState().userReducer;
     const headers = {};
+    const { longitude, latitude } = this.state;
+    const hasCoords = latitude && longitude;
     Axios.patch(
       `${url}api/v1/market/${this.props.market.id}`,
       {
@@ -75,6 +84,7 @@ export default class UpdateMarket extends Component {
         name: this.state.name,
         phone: this.state.phone,
         cityId: this.state.cityId,
+        coordinates: hasCoords ? JSON.stringify({ latitude, longitude }) : null,
         specializationIds: this.state.specsId,
       },
       {
@@ -83,6 +93,9 @@ export default class UpdateMarket extends Component {
     )
       .then((resmarket) => {
         this.setState({ spinning: false });
+        createLogs(`Обновил данные Продавца с id ${this.props.market.id}`);
+        setTimeout(() => window.location.reload(), 1000);
+
         message.success("Успешно");
         this.props.refresh();
         this.props.modalValue(false);
@@ -98,7 +111,7 @@ export default class UpdateMarket extends Component {
     return (
       <div>
         <Modal
-          title="Обновить маркета"
+          title="Обновить Продавца"
           visible={this.props.editModal}
           okText="Обновить"
           cancelText="Закрыть"
@@ -108,7 +121,7 @@ export default class UpdateMarket extends Component {
         >
           <Spin spinning={this.state.spinning}>
             <Form>
-              <Form.Item label="Название маркета">
+              <Form.Item label="Название Продавца">
                 <Input
                   value={this.state.name}
                   onChange={(e) => this.setState({ name: e.target.value })}
@@ -181,7 +194,7 @@ export default class UpdateMarket extends Component {
                   onChange={(e) => this.setState({ site: e.target.value })}
                 />
               </Form.Item>
-              <Form.Item label="Про маркет">
+              <Form.Item label="Про Продавца">
                 <TextArea
                   rows={4}
                   value={this.state.about}
@@ -253,6 +266,36 @@ export default class UpdateMarket extends Component {
                       onChange={(e) =>
                         this.setState({
                           breakSchedule: e.target.value,
+                        })
+                      }
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item label="Координаты карты(Широта)">
+                    <Input
+                      placeholder="Широта"
+                      value={this.state.latitude}
+                      type="number"
+                      onChange={(e) =>
+                        this.setState({
+                          latitude: e.target.value,
+                        })
+                      }
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item label="Координаты карты(Долгота)">
+                    <Input
+                      value={this.state.longitude}
+                      placeholder="Долгота"
+                      type="number"
+                      onChange={(e) =>
+                        this.setState({
+                          longitude: e.target.value,
                         })
                       }
                     />

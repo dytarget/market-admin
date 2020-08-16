@@ -11,6 +11,8 @@ import {
   Button,
   Popconfirm,
   Icon,
+  Modal,
+  Select,
 } from "antd";
 import GoogleMap, { Marker } from "react-maps-google";
 import axios from "axios";
@@ -24,6 +26,8 @@ import { RespondList } from "../components/RespondList";
 import ReactImageGallery from "react-image-gallery";
 import sendPushNotification from "../../../utils/sendPushNotification";
 import sendPushNotificationToMasters from "../../../utils/sendPushNotificationToMasters";
+import { connect } from "react-redux";
+import createLogs from "../../../utils/createLogs";
 
 const { Content } = Layout;
 const { TextArea } = Input;
@@ -31,12 +35,17 @@ const { TabPane } = Tabs;
 
 const url = "http://91.201.214.201:8443/";
 
-export class OrderSingle extends Component {
+class OrderSingle extends Component {
   constructor(props) {
     super(props);
     this.state = {
       order: "",
       spinning: true,
+      updateModal: "",
+      specId: "",
+      description: "",
+      address: "",
+      specs: [],
     };
   }
   async componentDidMount() {
@@ -49,6 +58,28 @@ export class OrderSingle extends Component {
       `${url}api/v1/order?mode=SINGLE&order=${this.props.match.params.id}`
     );
     this.setState({ spinning: false, order: res.data.content[0] });
+    axios
+      .get(`${url}api/v1/spec`)
+      .then((res) => this.setState({ specs: res.data.specializations }));
+  };
+
+  updateOrder = () => {
+    this.setState({ spinning: true, updateModal: false });
+
+    axios
+      .patch(`${url}api/v1/order/${this.state.order.id}`, {
+        specialization: this.state.specId,
+        address: this.state.address,
+        description: this.state.description,
+      })
+      .then((res) => {
+        createLogs(`Обновил данные Заказ ID=${res.data.id}`);
+
+        this.refresh();
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
 
   updateOrderStatus = (status) => {
@@ -63,6 +94,12 @@ export class OrderSingle extends Component {
         }
       )
       .then((res) => {
+        createLogs(
+          `Обновил Статус Заказа на "${getOrderStatus(status).text}" ID=${
+            res.data.id
+          }`
+        );
+
         this.refresh();
       })
       .catch((err) => {
@@ -76,27 +113,39 @@ export class OrderSingle extends Component {
       .get(`${url}api/v1/user/masters/${order.specialization.id}`)
       .then((res) => {
         let arr = [];
-        res.data.users.map((user) => {
-          arr.push(user.id);
+        res.data.users.forEach((user) => {
+          if (user.city.id === order.city.id) {
+            arr.push(user.id);
+          }
         });
 
-        sendPushNotificationToMasters(
-          `Заказ №${order.id} «${order.description.substring(0, 20)}${
-            order.description.length > 20 ? `...` : ``
-          }»`,
-          "Новый заказ",
-          arr,
-          "MasterListOrders",
-          order.id,
-          "master",
-          "bells"
-        );
+        if (arr.length > 0) {
+          sendPushNotificationToMasters(
+            `Заказ №${order.id} «${order.description.substring(0, 20)}${
+              order.description.length > 20 ? `...` : ``
+            }»`,
+            `Тапсырыс №${order.id} «${order.description.substring(0, 20)}${
+              order.description.length > 20 ? `...` : ``
+            }»`,
+            "Новый заказ",
+            "Жаңа тапсырыс",
+            arr,
+            "MasterListOrders",
+            order.id,
+            "master",
+            "bells"
+          );
+        }
       });
   };
 
   render() {
     const { order, spinning } = this.state;
-
+    const user = this.props.userReducer.user;
+    const canEditOrder =
+      user && user.userRights && user.userRights.canEditOrder === true;
+    const canDeleteOrder =
+      user && user.userRights && user.userRights.canDeleteOrder === true;
     console.log(order);
 
     const images = [];
@@ -110,11 +159,54 @@ export class OrderSingle extends Component {
         images.push(obj);
       });
     return (
-      <Content style={{ padding: "0 24px", minHeight: 280 }}>
+      <Content
+        style={{ padding: "0 24px", minHeight: 500 }}
+        className="content"
+      >
         <h2 style={{ textAlign: "center" }}>Карточка заказа</h2>
+        <Modal
+          title="Обновить заказ"
+          visible={this.state.updateModal}
+          okText="Обновить"
+          cancelText="Закрыть"
+          closable={false}
+          onOk={this.updateOrder}
+          onCancel={() => this.setState({ updateModal: false })}
+        >
+          <Form>
+            <Form.Item label="Специализация">
+              <Select
+                defaultValue={order?.specialization?.id}
+                onChange={(specId) => this.setState({ specId })}
+              >
+                {this.state.specs.map((spec) => (
+                  <Select.Option value={spec.id}>{spec.specName}</Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item label="Описание">
+              <Input
+                defaultValue={order.description}
+                onChange={(e) => this.setState({ description: e.target.value })}
+              />
+            </Form.Item>
+
+            <Form.Item label="Адрес">
+              <Input
+                defaultValue={order.address}
+                onChange={(e) =>
+                  this.setState({
+                    address: e.target.value,
+                  })
+                }
+              />
+            </Form.Item>
+          </Form>
+        </Modal>
         {order && (
           <Button.Group style={{ marginBottom: 20 }}>
-            {order.status === "MODERATION" && (
+            {order.status === "MODERATION" && canEditOrder && (
               <Popconfirm
                 placement="top"
                 onConfirm={() => {
@@ -123,7 +215,12 @@ export class OrderSingle extends Component {
                     `Заказ №${order.id} «${order.description.substring(0, 20)}${
                       order.description.length > 20 ? `...` : ``
                     }»`,
+                    `Тапсырыс №${order.id} «${order.description.substring(
+                      0,
+                      20
+                    )}${order.description.length > 20 ? `...` : ``}»`,
                     "Опубликован Ваш",
+                    "Тапсырыс жарияланды",
                     order.customer.id,
                     "MyOrder",
                     order.id,
@@ -139,56 +236,76 @@ export class OrderSingle extends Component {
                 <Button type="primary">Опубликовать</Button>
               </Popconfirm>
             )}
-            {order.status === "OPEN" && (
-              <Popconfirm
-                placement="top"
-                onConfirm={() => {
-                  this.updateOrderStatus("CANCELLED");
-                  sendPushNotification(
-                    `заказ №${order.id} «${order.description.substring(0, 20)}${
-                      order.description.length > 20 ? `...` : ``
-                    }»`,
-                    `Отменён`,
-                    order.customer.id,
-                    "MyOrderFinished",
-                    order.id,
-                    "client",
-                    "bells"
-                  );
-                }}
-                title={"Отменить ?"}
-                okText="Yes"
-                cancelText="No"
-              >
-                <Button type="primary">Отменить</Button>
-              </Popconfirm>
-            )}
+            {(order.status === "OPEN" || order.status === "MODERATION") &&
+              canEditOrder && (
+                <Popconfirm
+                  placement="top"
+                  onConfirm={() => {
+                    this.updateOrderStatus("CANCELLED");
+                    sendPushNotification(
+                      `заказ №${order.id} «${order.description.substring(
+                        0,
+                        20
+                      )}${order.description.length > 20 ? `...` : ``}»`,
+                      `тапсырыс №${order.id} «${order.description.substring(
+                        0,
+                        20
+                      )}${order.description.length > 20 ? `...` : ``}»`,
+                      `Отменён`,
+                      `Жойылды`,
+                      order.customer.id,
+                      "MyOrderFinished",
+                      order.id,
+                      "client",
+                      "bells"
+                    );
+                  }}
+                  title={"Отменить ?"}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <Button type="primary">Отменить</Button>
+                </Popconfirm>
+              )}
             {(order.status === "OPEN" ||
               order.status === "IN_PROGRESS" ||
-              order.status === "WAITING_FOR_CUSTOMER_RESPONSE") && (
-              <Popconfirm
-                placement="top"
-                onConfirm={() => {
-                  this.updateOrderStatus("COMPLETED");
-                  sendPushNotification(
-                    `заказ №${order.id} «${order.description.substring(0, 20)}${
-                      order.description.length > 20 ? `...` : ``
-                    }»`,
-                    `Завершён`,
-                    order.customer.id,
-                    "MyOrderFinished",
-                    order.id,
-                    "client",
-                    "bells"
-                  );
-                }}
-                title={"Завершить ?"}
-                okText="Yes"
-                cancelText="No"
-              >
-                <Button type="primary">Завершить</Button>
-              </Popconfirm>
-            )}
+              order.status === "WAITING_FOR_CUSTOMER_RESPONSE") &&
+              canEditOrder && (
+                <Popconfirm
+                  placement="top"
+                  onConfirm={() => {
+                    this.updateOrderStatus("COMPLETED");
+                    sendPushNotification(
+                      `заказ №${order.id} «${order.description.substring(
+                        0,
+                        20
+                      )}${order.description.length > 20 ? `...` : ``}»`,
+                      `тапсырыс №${order.id} «${order.description.substring(
+                        0,
+                        20
+                      )}${order.description.length > 20 ? `...` : ``}»`,
+                      `Завершён`,
+                      "Аяқталды",
+                      order.customer.id,
+                      "MyOrderFinished",
+                      order.id,
+                      "client",
+                      "bells"
+                    );
+                  }}
+                  title={"Завершить ?"}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <Button type="primary">Завершить</Button>
+                </Popconfirm>
+              )}
+            <Button
+              onClick={() => this.setState({ updateModal: true })}
+              type="primary"
+            >
+              Редактировать
+            </Button>
           </Button.Group>
         )}
         <Spin spinning={spinning}>
@@ -308,4 +425,4 @@ export class OrderSingle extends Component {
   }
 }
 
-export default OrderSingle;
+export default connect(({ userReducer }) => ({ userReducer }), {})(OrderSingle);

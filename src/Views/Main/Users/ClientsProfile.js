@@ -1,23 +1,25 @@
-import React, { Component, Fragment } from "react";
 import {
-  Layout,
-  Form,
-  Row,
-  Col,
-  Input,
-  Spin,
-  Card,
   Button,
+  Card,
+  Col,
+  Form,
   Icon,
-  Popconfirm,
-  Modal,
+  Input,
+  Layout,
   message,
+  Modal,
+  Popconfirm,
+  Row,
+  Select,
+  Spin,
 } from "antd";
 import axios from "axios";
-import { store } from "../../../store";
+import React, { Component, Fragment } from "react";
+import createLogs from "../../../utils/createLogs";
+import generateCitiesId from "../../../utils/generateCitiesId";
+import getLastOnline from "../../../utils/getLastOnline";
 import getUserDuration from "../../../utils/getUserDuration";
 import sendPushNotification from "../../../utils/sendPushNotification";
-import getLastOnline from "../../../utils/getLastOnline";
 
 const { Content } = Layout;
 
@@ -32,6 +34,11 @@ export class ClientsProfile extends Component {
       editModal: false,
       title: "",
       body: "",
+      titleKz: "",
+      bodyKz: "",
+      admins: [],
+      chooseManager: false,
+      managerId: 0,
     };
   }
 
@@ -51,6 +58,25 @@ export class ClientsProfile extends Component {
       .catch((err) => {
         console.log(err);
       });
+
+    axios
+      .get(`${url}api/v1/super/user/admins${generateCitiesId(true)}`)
+      .then((res) => this.setState({ admins: res.data }));
+  };
+
+  deleteUser = () => {
+    this.setState({ spinning: true });
+
+    axios
+      .delete(`${url}api/v1/user/${this.state.master?.id}`)
+      .then((res) => {
+        createLogs(`Удалил Юзера ${this.state.master?.username}`);
+        this.refresh();
+        this.props.history.push("/users/clients");
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
 
   deleteImage = (id) => {
@@ -62,6 +88,9 @@ export class ClientsProfile extends Component {
         headers: {},
       })
       .then((res) => {
+        createLogs(
+          `Удалил фотографию пользователя ${this.state.master?.username}`
+        );
         this.refresh();
       })
       .catch((err) => {
@@ -77,6 +106,7 @@ export class ClientsProfile extends Component {
         headers: {},
       })
       .then((res) => {
+        createLogs(`Удалил аватар пользователя ${this.state.master?.username}`);
         this.refresh();
       })
       .catch((err) => {
@@ -90,7 +120,11 @@ export class ClientsProfile extends Component {
     axios
       .put(`${url}api/v1/user/${this.state.master.username}`, { status })
       .then((res) => {
+        createLogs(
+          `Поменял статус пользователя ${this.state.master?.username}`
+        );
         this.refresh();
+        setTimeout(() => window.location.reload(), 1000);
       })
       .catch((err) => {
         console.log(err);
@@ -98,12 +132,31 @@ export class ClientsProfile extends Component {
   };
 
   pushNotification = () => {
-    const { title, body, master } = this.state;
-    if (title.length < 1 || body.length < 1) {
+    const { title, body, master, bodyKz, titleKz } = this.state;
+    if (
+      title.length < 1 ||
+      body.length < 1 ||
+      titleKz.length < 1 ||
+      bodyKz.length < 1
+    ) {
       message.error("Заполните поля");
     } else {
-      sendPushNotification(body, title, master.id, "", "", "client", "bells");
+      sendPushNotification(
+        body,
+        bodyKz,
+        title,
+        titleKz,
+        master.id,
+        "",
+        "",
+        "client",
+        "bells"
+      );
+      createLogs(
+        `Отправил уведомления пользователю ${this.state.master?.username}`
+      );
       this.setState({ editModal: false });
+      setTimeout(() => window.location.reload(), 1000);
     }
   };
 
@@ -115,10 +168,32 @@ export class ClientsProfile extends Component {
         headers: {},
       })
       .then((res) => {
+        createLogs(`Заблокировал пользователя ${this.state.master?.username}`);
         this.refresh();
       })
       .catch((err) => {
         console.log(err);
+      });
+  };
+
+  chooseManager = () => {
+    this.setState({ spinning: true });
+    const { managerId } = this.state;
+
+    axios
+      .put(`${url}api/v1/user/${this.state.master.username}`, {
+        managerId,
+      })
+      .then((res) => {
+        createLogs(
+          `Выбрал менеджера по ID ${managerId} для пользователя ${this.state.master?.username}`
+        );
+        this.refresh();
+        setTimeout(() => window.location.reload(), 1000);
+      })
+      .catch((err) => {
+        console.log(err);
+        message.error("Ошибка");
       });
   };
 
@@ -161,6 +236,14 @@ export class ClientsProfile extends Component {
                       }
                     />
                   </Form.Item>
+                  <Form.Item label="Заголовок Kz">
+                    <Input
+                      value={this.state.titleKz}
+                      onChange={(text) =>
+                        this.setState({ titleKz: text.target.value })
+                      }
+                    />
+                  </Form.Item>
                   <Form.Item label="Содержимое">
                     <Input
                       value={this.state.body}
@@ -169,55 +252,93 @@ export class ClientsProfile extends Component {
                       }
                     />
                   </Form.Item>
+                  <Form.Item label="Содержимое Kz">
+                    <Input
+                      value={this.state.bodyKz}
+                      onChange={(text) =>
+                        this.setState({ bodyKz: text.target.value })
+                      }
+                    />
+                  </Form.Item>
+                </Form>
+              </Modal>
+              <Modal
+                title="Выбрать Менеджера"
+                visible={this.state.chooseManager}
+                okText="Выбрать"
+                cancelText="Закрыть"
+                onCancel={() => this.setState({ chooseManager: false })}
+                onOk={this.chooseManager}
+              >
+                <Form>
+                  <Form.Item label="Менеджер">
+                    <Select
+                      onChange={(managerId) => this.setState({ managerId })}
+                    >
+                      {this.state.admins.map((admin) => (
+                        <Select.Option value={admin.id}>
+                          {admin.firstName} {admin.lastName}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
                 </Form>
               </Modal>
               <div style={{ margin: 20 }}>
                 <Button.Group>
-                  {master.status === "BLOCKED" ? (
+                  {this.props.canEditUser &&
+                    (master.status === "BLOCKED" ? (
+                      <Popconfirm
+                        placement="top"
+                        onConfirm={() =>
+                          this.updateMasterStatus("NOT_VERIFIED")
+                        }
+                        title={"Разблокировать ?"}
+                        okText="Yes"
+                        cancelText="No"
+                      >
+                        <Button type="danger">
+                          <Icon type="unlock" />
+                          Разблокировать
+                        </Button>
+                      </Popconfirm>
+                    ) : (
+                      <Popconfirm
+                        placement="top"
+                        title={"Заблокировать ?"}
+                        okText="Yes"
+                        onConfirm={() => this.blockMaster()}
+                        cancelText="No"
+                      >
+                        <Button type="danger">
+                          <Icon type="lock" />
+                          Заблокировать
+                        </Button>
+                      </Popconfirm>
+                    ))}
+                  {this.props.canEditUser && (
+                    <Button
+                      onClick={() => this.setState({ editModal: true })}
+                      type="primary"
+                    >
+                      Уведомление
+                      <Icon type="message" />
+                    </Button>
+                  )}
+                  {this.props.canDeleteUser && (
                     <Popconfirm
                       placement="top"
-                      onConfirm={() => this.updateMasterStatus("NOT_VERIFIED")}
-                      title={"Разблокировать ?"}
+                      title={"Удалить ?"}
+                      onConfirm={this.deleteUser}
                       okText="Yes"
                       cancelText="No"
                     >
-                      <Button type="danger">
-                        <Icon type="unlock" />
-                        Разблокировать
-                      </Button>
-                    </Popconfirm>
-                  ) : (
-                    <Popconfirm
-                      placement="top"
-                      title={"Заблокировать ?"}
-                      okText="Yes"
-                      onConfirm={() => this.blockMaster()}
-                      cancelText="No"
-                    >
-                      <Button type="danger">
-                        <Icon type="lock" />
-                        Заблокировать
+                      <Button type="default">
+                        Удалить
+                        <Icon type="delete" />
                       </Button>
                     </Popconfirm>
                   )}
-                  <Button
-                    onClick={() => this.setState({ editModal: true })}
-                    type="primary"
-                  >
-                    Отправить уведомление
-                    <Icon type="message" />
-                  </Button>
-                  <Popconfirm
-                    placement="top"
-                    title={"Удалить ?"}
-                    okText="Yes"
-                    cancelText="No"
-                  >
-                    <Button type="default">
-                      Удалить
-                      <Icon type="delete" />
-                    </Button>
-                  </Popconfirm>
                   {master.master && (
                     <Button
                       onClick={() =>
@@ -227,8 +348,15 @@ export class ClientsProfile extends Component {
                       }
                       type="default"
                     >
-                      Посмотреть профиль маркета
+                      Профиль Мастера
                       <Icon type="eye" />
+                    </Button>
+                  )}
+                  {this.props.canEditUser && (
+                    <Button
+                      onClick={() => this.setState({ chooseManager: true })}
+                    >
+                      Выбрать {master.manager ? " нового " : null} Менеджера
                     </Button>
                   )}
                 </Button.Group>
