@@ -21,7 +21,7 @@ const sendPushNotification = (
   const pushBody = {
     userIds: [userId],
     title,
-    channelId: "chat-messages",
+    channelId: "max-chat-messages",
     body,
     data: {
       additionalProp1: {

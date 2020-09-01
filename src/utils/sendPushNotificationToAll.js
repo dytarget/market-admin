@@ -13,7 +13,7 @@ const sendPushNotificationToAll = (
   const pushBody = {
     userIds: [],
     title,
-    channelId: "chat-messages",
+    channelId: "max-chat-messages",
     body,
     data: {
       additionalProp1: {
