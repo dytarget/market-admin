@@ -11,6 +11,6 @@ export default (type, value) => {
   } else if (type === types[0]) {
     return value;
   } else if (type === types[1]) {
-    return texts[type];
+    return `${texts[type]}: ${value} `;
   }
 };
