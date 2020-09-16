@@ -23,7 +23,7 @@ const columns = [
     key: "user",
     render: (user) => (
       <Link to={`/users/clients/${user.username}`}>
-        {user.firstName} {user.lastName}
+        {`${user?.firstName} ${user?.lastName}`}
       </Link>
     ),
   },

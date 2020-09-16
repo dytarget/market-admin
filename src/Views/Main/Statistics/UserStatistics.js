@@ -168,9 +168,7 @@ class UserStatistics extends Component {
           key: "firstName",
           render: (firstName, data) => (
             <Link to={`/users/clients/${data.username}`}>
-              <span>
-                {firstName} {data.lastName}
-              </span>
+              <span>{`${firstName} ${data?.lastName}`}</span>
             </Link>
           ),
         },
