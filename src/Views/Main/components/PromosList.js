@@ -1,6 +1,7 @@
 import React from "react";
 import { List, Avatar } from "antd";
 import { Link } from "react-router-dom";
+import config from "../../../config/config";
 
 export const PromosList = ({ promos }) => {
   return (
@@ -8,7 +9,7 @@ export const PromosList = ({ promos }) => {
       <List
         itemLayout="horizontal"
         dataSource={promos}
-        renderItem={item => (
+        renderItem={(item) => (
           <List.Item>
             <List.Item.Meta
               avatar={
@@ -18,7 +19,7 @@ export const PromosList = ({ promos }) => {
                   alt="promo"
                   src={
                     item.image
-                      ? `http://91.201.214.201:8443/images/${item.image.imageName}`
+                      ? `${config.images}${item.image.imageName}`
                       : "https://sanitationsolutions.net/wp-content/uploads/2015/05/empty-image.png"
                   }
                 />

@@ -63,13 +63,15 @@ export class SpecStatistics extends Component {
 
   refresh = () => {
     this.setState({ spinning: true });
-    Axios.get(`${url}api/v1/spec${generateCitiesId(true)}`).then((res) => {
-      this.setState({
-        specs: res.data.specializations.sort((a, b) => b.id - a.id),
-        data: res.data.specializations.sort((a, b) => b.id - a.id),
-        spinning: false,
-      });
-    });
+    Axios.get(`${config.url}api/v1/spec${generateCitiesId(true)}`).then(
+      (res) => {
+        this.setState({
+          specs: res.data.specializations.sort((a, b) => b.id - a.id),
+          data: res.data.specializations.sort((a, b) => b.id - a.id),
+          spinning: false,
+        });
+      }
+    );
   };
 
   change = (value) => {

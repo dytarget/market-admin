@@ -24,8 +24,8 @@ import { store } from "../../../store";
 import TextArea from "antd/lib/input/TextArea";
 import createLogs from "../../../utils/createLogs";
 import generateCitiesId from "../../../utils/generateCitiesId";
+import config from "../../../config/config";
 
-const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 export default class AllPromosTable extends React.Component {
@@ -50,7 +50,7 @@ export default class AllPromosTable extends React.Component {
       Authorization: `Bearer ${token}`,
     };
     axios
-      .get(`${url}api/v1/promo${generateCitiesId(true)}`, {
+      .get(`${config.url}api/v1/promo${generateCitiesId(true)}`, {
         headers,
       })
       .then((res) => {
@@ -74,7 +74,7 @@ export default class AllPromosTable extends React.Component {
 
     axios
       .post(
-        `${url}api/v1/promo?link=${this.state.link}&type=ORDER`,
+        `${config.url}api/v1/promo?link=${this.state.link}&type=ORDER`,
         {},
         {
           headers,
@@ -88,7 +88,7 @@ export default class AllPromosTable extends React.Component {
 
         const authOptions2 = {
           method: "POST",
-          url: `${url}api/v1/image/promo/${res.data.id}`,
+          url: `${config.url}api/v1/image/promo/${res.data.id}`,
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
@@ -107,7 +107,7 @@ export default class AllPromosTable extends React.Component {
 
   deletePromos = (id) => {
     axios
-      .delete(`${url}api/v1/promo/${id}`)
+      .delete(`${config.url}api/v1/promo/${id}`)
       .then(() => {
         this.refresh();
         createLogs(`Удалил Баннер ID = ${id}`);
@@ -136,7 +136,7 @@ export default class AllPromosTable extends React.Component {
             height={200}
             src={
               image
-                ? `http://91.201.214.201:8443/images/${image.imageName}`
+                ? `${config.images}${image.imageName}`
                 : "https://sanitationsolutions.net/wp-content/uploads/2015/05/empty-image.png"
             }
             alt=""
@@ -262,7 +262,7 @@ export default class AllPromosTable extends React.Component {
                   <img
                     src={
                       this.state.image_update
-                        ? `http://91.201.214.201:8443/images/${this.state.image_update.imageName}`
+                        ? `${config.images}${this.state.image_update.imageName}`
                         : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
                     }
                     alt=""

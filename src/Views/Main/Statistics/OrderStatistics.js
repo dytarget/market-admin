@@ -109,7 +109,9 @@ export class OrderStatistics extends Component {
     this.setState({ spinning: true });
     const { from, to } = this.state;
     Axios.get(
-      `${url}api/v1/admin/report/order?from=${from}&to=${to}${generateCitiesId(
+      `${
+        config.url
+      }api/v1/admin/report/order?from=${from}&to=${to}${generateCitiesId(
         false
       )}`
     ).then((res) => {

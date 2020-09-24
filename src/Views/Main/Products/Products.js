@@ -26,13 +26,13 @@ import { store } from "../../../store";
 import { PromosList } from "../components/PromosList";
 import { ProductCategoryList } from "../components/ProductCategory";
 import createLogs from "../../../utils/createLogs";
+import config from "../../../config/config";
 
 const { Content } = Layout;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
 const { Option } = Select;
 
-const url = "http://91.201.214.201:8443/";
 const columns = [
   {
     title: "Название",
@@ -85,11 +85,14 @@ export class Products extends Component {
   refresh = () => {
     this.cleanUp();
     axios
-      .get(`${url}api/v1/product-category/market/${this.state.market.id}`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
+      .get(
+        `${config.url}api/v1/product-category/market/${this.state.market.id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
       .then((res) => {
         this.setState({
           marketCategories: res.data.productCategories,
@@ -106,7 +109,7 @@ export class Products extends Component {
     console.log(id);
 
     axios
-      .delete(`${url}api/v1/image/${id}`, {
+      .delete(`${config.url}api/v1/image/${id}`, {
         headers: {},
       })
       .then((res) => {
@@ -122,7 +125,7 @@ export class Products extends Component {
     this.setState({ spinning: true });
 
     axios
-      .delete(`${url}api/v1/image/user/${userId}/avatar`, {
+      .delete(`${config.url}api/v1/image/user/${userId}/avatar`, {
         headers: {},
       })
       .then((res) => {
@@ -141,7 +144,7 @@ export class Products extends Component {
     this.setState({ spinning: true });
 
     axios
-      .delete(`${url}api/v1/super/market/${this.state.market.id}`, {
+      .delete(`${config.url}api/v1/super/market/${this.state.market.id}`, {
         headers: {},
       })
       .then((res) => {
@@ -157,7 +160,7 @@ export class Products extends Component {
     this.setState({ createProdModal: false });
     axios
       .post(
-        `${url}api/v1/product`,
+        `${config.url}api/v1/product`,
         {
           categoryId: this.state.prodCatId,
           cost: this.state.prodCost,
@@ -178,7 +181,7 @@ export class Products extends Component {
 
         const authOptions2 = {
           method: "POST",
-          url: `${url}api/v1/image/product/${res.data.id}`,
+          url: `${config.url}api/v1/image/product/${res.data.id}`,
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -201,8 +204,8 @@ export class Products extends Component {
       market.photos &&
       market.photos.map((photos, index) => {
         const obj = {
-          original: `http://91.201.214.201:8443/images/${photos.imageName}`,
-          thumbnail: `http://91.201.214.201:8443/images/${photos.imageName}`,
+          original: `${config.images}${photos.imageName}`,
+          thumbnail: `${config.images}${photos.imageName}`,
         };
         galleryPhotos.push(obj);
       });

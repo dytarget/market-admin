@@ -16,8 +16,7 @@ import TextArea from "antd/lib/input/TextArea";
 import { store } from "../../../../store";
 import Axios from "axios";
 import createLogs from "../../../../utils/createLogs";
-
-const url = "http://91.201.214.201:8443/";
+import config from "../../../../config/config";
 
 export default class UpdateMarket extends Component {
   constructor(props) {
@@ -53,10 +52,10 @@ export default class UpdateMarket extends Component {
   }
 
   componentDidMount() {
-    Axios.get(`${url}api/v1/city/all`)
+    Axios.get(`${config.url}api/v1/city/all`)
       .then((res) => this.setState({ cities: res.data.cities }))
       .catch((err) => console.log(err));
-    Axios.get(`${url}api/v1/spec`).then((res) => {
+    Axios.get(`${config.url}api/v1/spec`).then((res) => {
       this.setState({ specializations: res.data.specializations });
     });
   }
@@ -68,7 +67,7 @@ export default class UpdateMarket extends Component {
     const { longitude, latitude } = this.state;
     const hasCoords = latitude && longitude;
     Axios.patch(
-      `${url}api/v1/market/${this.props.market.id}`,
+      `${config.url}api/v1/market/${this.props.market.id}`,
       {
         about: this.state.about,
         address: this.state.address,

@@ -15,6 +15,7 @@ import {
 } from "antd";
 import axios from "axios";
 import React, { Component, Fragment } from "react";
+import config from "../../../config/config";
 import createLogs from "../../../utils/createLogs";
 import generateCitiesId from "../../../utils/generateCitiesId";
 import getLastOnline from "../../../utils/getLastOnline";
@@ -22,8 +23,6 @@ import getUserDuration from "../../../utils/getUserDuration";
 import sendPushNotification from "../../../utils/sendPushNotification";
 
 const { Content } = Layout;
-
-const url = "http://91.201.214.201:8443/";
 
 export class ClientsProfile extends Component {
   constructor(props) {
@@ -49,7 +48,7 @@ export class ClientsProfile extends Component {
   refresh = () => {
     this.setState({ spinning: true });
     axios
-      .get(`${url}api/v1/user/${this.props.match.params.username}`, {
+      .get(`${config.url}api/v1/user/${this.props.match.params.username}`, {
         headers: {},
       })
       .then((res) => {
@@ -60,7 +59,7 @@ export class ClientsProfile extends Component {
       });
 
     axios
-      .get(`${url}api/v1/super/user/admins${generateCitiesId(true)}`)
+      .get(`${config.url}api/v1/super/user/admins${generateCitiesId(true)}`)
       .then((res) => this.setState({ admins: res.data }));
   };
 
@@ -68,7 +67,7 @@ export class ClientsProfile extends Component {
     this.setState({ spinning: true });
 
     axios
-      .delete(`${url}api/v1/user/${this.state.master?.id}`)
+      .delete(`${config.url}api/v1/user/${this.state.master?.id}`)
       .then((res) => {
         createLogs(`Удалил Юзера ${this.state.master?.username}`);
         this.refresh();
@@ -84,7 +83,7 @@ export class ClientsProfile extends Component {
     console.log(id);
 
     axios
-      .delete(`${url}api/v1/image/${id}`, {
+      .delete(`${config.url}api/v1/image/${id}`, {
         headers: {},
       })
       .then((res) => {
@@ -102,7 +101,7 @@ export class ClientsProfile extends Component {
     this.setState({ spinning: true });
 
     axios
-      .delete(`${url}api/v1/image/user/${userId}/avatar`, {
+      .delete(`${config.url}api/v1/image/user/${userId}/avatar`, {
         headers: {},
       })
       .then((res) => {
@@ -118,7 +117,7 @@ export class ClientsProfile extends Component {
     this.setState({ spinning: true });
 
     axios
-      .put(`${url}api/v1/user/${this.state.master.username}`, { status })
+      .put(`${config.url}api/v1/user/${this.state.master.username}`, { status })
       .then((res) => {
         createLogs(
           `Поменял статус пользователя ${this.state.master?.username}`
@@ -164,7 +163,7 @@ export class ClientsProfile extends Component {
     this.setState({ spinning: true });
 
     axios
-      .patch(`${url}api/v1/admin/user/block/${this.state.master.id}`, {
+      .patch(`${config.url}api/v1/admin/user/block/${this.state.master.id}`, {
         headers: {},
       })
       .then((res) => {
@@ -181,7 +180,7 @@ export class ClientsProfile extends Component {
     const { managerId } = this.state;
 
     axios
-      .put(`${url}api/v1/user/${this.state.master.username}`, {
+      .put(`${config.url}api/v1/user/${this.state.master.username}`, {
         managerId,
       })
       .then((res) => {
@@ -372,7 +371,7 @@ export class ClientsProfile extends Component {
                         alt="example"
                         src={
                           master.avatar
-                            ? `http://91.201.214.201:8443/images/${master.avatar.imageName}`
+                            ? `${config.images}${master.avatar.imageName}`
                             : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
                         }
                       />

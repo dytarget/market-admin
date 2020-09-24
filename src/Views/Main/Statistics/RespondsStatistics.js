@@ -43,7 +43,9 @@ export class RespondsStatistics extends Component {
     const { from, to } = this.state;
     this.setState({ spinning: true });
     Axios.get(
-      `${url}api/v1/admin/report/communication?from=${from}&to=${to}${generateCitiesId(
+      `${
+        config.url
+      }api/v1/admin/report/communication?from=${from}&to=${to}${generateCitiesId(
         false
       )}`
     ).then((res) =>

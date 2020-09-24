@@ -5,6 +5,7 @@ import axios from "axios";
 import { Switch, Route, Link } from "react-router-dom";
 import { OrderTable } from "./OrderTable";
 import OrderSingle from "./OrderSingle";
+import config from "../../../config/config";
 
 const { Content, Sider } = Layout;
 const allStatus = [
@@ -15,8 +16,6 @@ const allStatus = [
   "WAITING_FOR_CUSTOMER_RESPONSE",
   "CANCELLED",
 ];
-
-const url = "http://91.201.214.201:8443/";
 
 class Orders extends Component {
   constructor(props) {
@@ -61,7 +60,7 @@ class Orders extends Component {
       status.map((item) => (statuses += `status=${item}&`));
       axios
         .get(
-          `${url}api/v1/order?mode=ALL&${statuses.substring(
+          `${config.url}api/v1/order?mode=ALL&${statuses.substring(
             0,
             statuses.lastIndexOf("&")
           )}&orderBy=CREATED&direction=DESC&page=${this.state.page}${cities}`
@@ -80,10 +79,10 @@ class Orders extends Component {
     if (user && user.userRights && user.userRights.canLookOrder === true) {
       this.setState({ spinning: true, key: "1", status: allStatus });
       axios
-        .get(`${url}api/v1/order/search?param=${type}&q=${text}`)
+        .get(`${config.url}api/v1/order/search?param=${type}&q=${text}`)
         .then((res) => {
           console.log(
-            `${url}api/v1/order/search?param=${type}&q=${text}`,
+            `${config.url}api/v1/order/search?param=${type}&q=${text}`,
             res.data
           );
           this.setState({ spinning: false, orders: res.data });

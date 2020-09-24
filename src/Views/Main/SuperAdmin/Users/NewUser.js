@@ -14,7 +14,6 @@ import axios from "axios";
 import { store } from "../../../../store";
 import createLogs from "../../../../utils/createLogs";
 import config from "../../../../config/config";
-const url = "http://91.201.214.201:8443/";
 
 const Option = Select.Option;
 const ButtonGroup = Button.Group;
@@ -39,7 +38,7 @@ class NewUser extends React.Component {
 
   componentDidMount() {
     axios
-      .get(`${url}api/v1/city/all`)
+      .get(`${config.url}api/v1/city/all`)
       .then((res) => this.setState({ cities: res.data.cities }));
   }
 
@@ -67,7 +66,7 @@ class NewUser extends React.Component {
 
     axios({
       method: "POST",
-      url: `${url}api/v1/super/register`,
+      url: `${config.url}api/v1/super/register`,
       data: {
         code: this.password.state.value,
         username: this.login.state.value,
@@ -77,7 +76,7 @@ class NewUser extends React.Component {
     }).then((res) => {
       axios({
         method: "PUT",
-        url: `${url}api/v1/user/${res.data.username}`,
+        url: `${config.url}api/v1/user/${res.data.username}`,
         data: {
           firstName: this.firstName.state.value,
           lastName: this.lastName.state.value,
@@ -85,7 +84,7 @@ class NewUser extends React.Component {
       });
       axios({
         method: "PATCH",
-        url: `${url}api/v1/user/rights/${res.data.id}`,
+        url: `${config.url}api/v1/user/rights/${res.data.id}`,
         data: this.state,
       })
         .then(async () => {
@@ -96,7 +95,7 @@ class NewUser extends React.Component {
           await this.state.cityIds.forEach(async (cityId) => {
             await axios({
               method: "PATCH",
-              url: `${url}api/v1/super/permission/${res.data.id}/city/${cityId}`,
+              url: `${config.url}api/v1/super/permission/${res.data.id}/city/${cityId}`,
             });
           });
           message.success("Успешно");

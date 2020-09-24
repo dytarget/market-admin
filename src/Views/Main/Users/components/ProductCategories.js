@@ -18,8 +18,8 @@ import {
 } from "antd";
 import axios from "axios";
 import createLogs from "../../../../utils/createLogs";
+import config from "../../../../config/config";
 
-const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 export default class ProductCategories extends React.Component {
@@ -43,7 +43,7 @@ export default class ProductCategories extends React.Component {
   refresh = () => {
     this.setState({ spinning: true });
     axios
-      .get(`${url}api/v1/product-category/market/${this.props.marketId}`)
+      .get(`${config.url}api/v1/product-category/market/${this.props.marketId}`)
       .then((res) => {
         this.setState({
           spinning: false,
@@ -62,7 +62,7 @@ export default class ProductCategories extends React.Component {
   createCategory = () => {
     const authOptions = {
       method: "POST",
-      url: `${url}api/v1/super/product-category`,
+      url: `${config.url}api/v1/super/product-category`,
       json: true,
       data: {
         name: this.state.name,
@@ -81,7 +81,7 @@ export default class ProductCategories extends React.Component {
 
           const authOptions2 = {
             method: "POST",
-            url: `${url}api/v1/image/product-category/${res.data.id}`,
+            url: `${config.url}api/v1/image/product-category/${res.data.id}`,
             headers: {
               "Content-Type": "multipart/form-data",
             },
@@ -112,7 +112,7 @@ export default class ProductCategories extends React.Component {
   handleUpdate = () => {
     const authOptions = {
       method: "PATCH",
-      url: `${url}api/v1/super/product-category`,
+      url: `${config.url}api/v1/super/product-category`,
       data: {
         name: this.state.name,
         productCategoryId: this.state.id,
@@ -134,7 +134,7 @@ export default class ProductCategories extends React.Component {
 
           const authOptions2 = {
             method: "POST",
-            url: `${url}api/v1/image/product-category/${this.state.id}`,
+            url: `${config.url}api/v1/image/product-category/${this.state.id}`,
             headers: {
               "Content-Type": "multipart/form-data",
             },
@@ -162,7 +162,7 @@ export default class ProductCategories extends React.Component {
     this.setState({ spinning: true });
     const authOptions = {
       method: "DELETE",
-      url: `${url}api/v1/super/product-category/${id}`,
+      url: `${config.url}api/v1/super/product-category/${id}`,
     };
 
     axios(authOptions)
@@ -203,7 +203,7 @@ export default class ProductCategories extends React.Component {
             style={{ width: 80 }}
             src={
               image
-                ? `http://91.201.214.201:8443/images/${image.imageName}`
+                ? `${config.images}${image.imageName}`
                 : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
             }
             alt=""
@@ -296,7 +296,7 @@ export default class ProductCategories extends React.Component {
                     style={{ width: 100, margin: "30px" }}
                     src={
                       this.state.image_old
-                        ? `http://91.201.214.201:8443/images/${this.state.image_old.imageName}`
+                        ? `${config.images}${this.state.image_old.imageName}`
                         : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
                     }
                     alt=""

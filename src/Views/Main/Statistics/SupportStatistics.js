@@ -40,31 +40,33 @@ export class SupportStatistics extends Component {
 
   refresh = () => {
     this.setState({ spinning: true });
-    Axios.get(`${url}api/v1/support${generateCitiesId(true)}`).then((res) => {
-      let question = 0;
-      let complaint = 0;
-      let suggestion = 0;
-      const result = res.data.supportMessages;
-      result.forEach((element) => {
-        if (element.type === "QUESTION") {
-          question++;
-        } else if (element.type === "COMPLAINT") {
-          complaint++;
-        } else if (element.type === "SUGGESTION") {
-          suggestion++;
-        }
-      });
-      this.setState({
-        transactionStatistics: [
-          {
-            complaint,
-            question,
-            suggestion,
-          },
-        ],
-        spinning: false,
-      });
-    });
+    Axios.get(`${config.url}api/v1/support${generateCitiesId(true)}`).then(
+      (res) => {
+        let question = 0;
+        let complaint = 0;
+        let suggestion = 0;
+        const result = res.data.supportMessages;
+        result.forEach((element) => {
+          if (element.type === "QUESTION") {
+            question++;
+          } else if (element.type === "COMPLAINT") {
+            complaint++;
+          } else if (element.type === "SUGGESTION") {
+            suggestion++;
+          }
+        });
+        this.setState({
+          transactionStatistics: [
+            {
+              complaint,
+              question,
+              suggestion,
+            },
+          ],
+          spinning: false,
+        });
+      }
+    );
   };
 
   generateExcel = () => {

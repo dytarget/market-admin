@@ -24,8 +24,8 @@ import axios from "axios";
 import { store } from "../../../store";
 import TextArea from "antd/lib/input/TextArea";
 import createLogs from "../../../utils/createLogs";
+import config from "../../../config/config";
 
-const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 export default class FAQQuestion extends React.Component {
@@ -53,7 +53,7 @@ export default class FAQQuestion extends React.Component {
       "Content-Type": "application/json",
     };
     axios
-      .get(`${url}api/v1/faq-category`, {
+      .get(`${config.url}api/v1/faq-category`, {
         headers,
       })
       .then((res) => {
@@ -95,7 +95,7 @@ export default class FAQQuestion extends React.Component {
   createFAQQuestion = () => {
     this.setState({ editModal: false, spinning: true });
     axios
-      .post(`${url}api/v1/super/faq`, {
+      .post(`${config.url}api/v1/super/faq`, {
         categoryId: this.state.categoryId,
         text: this.state.text,
         textKz: this.state.textKz,
@@ -111,7 +111,7 @@ export default class FAQQuestion extends React.Component {
 
           const authOptions = {
             method: "POST",
-            url: `${url}api/v1/image/faq/${res.data.id}`,
+            url: `${config.url}api/v1/image/faq/${res.data.id}`,
             data: file,
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
@@ -136,7 +136,7 @@ export default class FAQQuestion extends React.Component {
     this.setState({ visibleUpdate: false, spinning: true });
 
     axios
-      .patch(`${url}api/v1/super/faq/${this.state.id}`, {
+      .patch(`${config.url}api/v1/super/faq/${this.state.id}`, {
         categoryId: this.state.categoryId,
         text: this.state.text,
         textKz: this.state.textKz,
@@ -152,7 +152,7 @@ export default class FAQQuestion extends React.Component {
 
           const authOptions = {
             method: "POST",
-            url: `${url}api/v1/image/faq/${this.state.id}`,
+            url: `${config.url}api/v1/image/faq/${this.state.id}`,
             data: file,
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
@@ -179,7 +179,7 @@ export default class FAQQuestion extends React.Component {
 
   deleteNews = (id) => {
     axios
-      .delete(`${url}api/v1/super/faq/${id}`)
+      .delete(`${config.url}api/v1/super/faq/${id}`)
       .then(() => {
         this.refresh();
         createLogs(`Удалил Часты задаваемые вопросы ID = ${id}`);
@@ -264,7 +264,7 @@ export default class FAQQuestion extends React.Component {
             style={{ width: 70 }}
             src={
               image
-                ? `http://91.201.214.201:8443/images/${image.imageName}`
+                ? `${config.images}${image.imageName}`
                 : "https://sanitationsolutions.net/wp-content/uploads/2015/05/empty-image.png"
             }
             alt=""

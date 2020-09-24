@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const url = "http://91.201.214.201:8443";
+import config from "../config/config";
 
 const sendPushNotificationToAll = (
   body,
@@ -28,7 +27,7 @@ const sendPushNotificationToAll = (
   };
 
   axios
-    .post(`${url}/api/v1/push`, pushBody, {
+    .post(`${config.url}/api/v1/push`, pushBody, {
       headers: {
         "Content-Type": "application/json",
       },

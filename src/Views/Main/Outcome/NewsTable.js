@@ -30,7 +30,6 @@ import { connect } from "react-redux";
 import config from "../../../config/config";
 import sendPushNotificationToMasters from "../../../utils/sendPushNotificationToMasters";
 
-const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 class NewsTable extends React.Component {
@@ -58,7 +57,7 @@ class NewsTable extends React.Component {
     this.setState({ spinning: true });
     this.cleanUp();
     axios
-      .get(`${url}api/v1/news/all${generateCitiesId(true)}`)
+      .get(`${config.url}api/v1/news/all${generateCitiesId(true)}`)
       .then((res) => {
         console.log(res.data);
 
@@ -71,7 +70,7 @@ class NewsTable extends React.Component {
         console.log(err);
       });
 
-    axios.get(`${url}api/v1/city/all`).then((res) => {
+    axios.get(`${config.url}api/v1/city/all`).then((res) => {
       const { cities, isSuperAdmin } = this.props.userReducer.user;
       const citiesFiltered = isSuperAdmin
         ? res.data.cities
@@ -107,7 +106,7 @@ class NewsTable extends React.Component {
     message.warn("Подождите !");
 
     axios
-      .post(`${url}api/v1/news`, {
+      .post(`${config.url}api/v1/news`, {
         header: this.state.title,
         text: this.state.text,
         headerKz: this.state.titleKz,
@@ -124,7 +123,7 @@ class NewsTable extends React.Component {
 
         const authOptions = {
           method: "POST",
-          url: `${url}api/v1/image/news/${res.data.id}`,
+          url: `${config.url}api/v1/image/news/${res.data.id}`,
           data: file,
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -178,7 +177,7 @@ class NewsTable extends React.Component {
     this.setState({ visibleUpdate: false, spinning: true });
 
     axios
-      .patch(`${url}api/v1/news/${this.state.id}`, {
+      .patch(`${config.url}api/v1/news/${this.state.id}`, {
         header: this.state.title_update,
         text: this.state.text_update,
         headerKz: this.state.title_updateKz,
@@ -196,7 +195,7 @@ class NewsTable extends React.Component {
 
           const authOptions = {
             method: "POST",
-            url: `${url}api/v1/image/news/${this.state.id}`,
+            url: `${config.url}api/v1/image/news/${this.state.id}`,
             data: file,
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
@@ -229,7 +228,7 @@ class NewsTable extends React.Component {
 
   deleteNews = (id) => {
     axios
-      .delete(`${url}api/v1/news/${id}`)
+      .delete(`${config.url}api/v1/news/${id}`)
       .then(() => {
         this.refresh();
         createLogs(`Удалил Новости ID = ${id}`);
@@ -265,7 +264,7 @@ class NewsTable extends React.Component {
             style={{ width: 70 }}
             src={
               image
-                ? `http://91.201.214.201:8443/images/${image.imageName}`
+                ? `${config.images}${image.imageName}`
                 : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
             }
             alt=""

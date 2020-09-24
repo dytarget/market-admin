@@ -38,7 +38,9 @@ export class AboutServiceStatistics extends Component {
     this.setState({ spinning: true });
     const { from, to } = this.state;
     Axios.get(
-      `${url}api/v1/admin/report/about-service?from=${from}&to=${to}${generateCitiesId(
+      `${
+        config.url
+      }api/v1/admin/report/about-service?from=${from}&to=${to}${generateCitiesId(
         false
       )}`
     ).then((res) => {

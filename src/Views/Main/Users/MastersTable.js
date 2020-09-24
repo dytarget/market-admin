@@ -3,10 +3,10 @@ import axios from "axios";
 import React from "react";
 import { connect } from "react-redux";
 import { Link } from "react-router-dom";
+import config from "../../../config/config";
 import getLastOnline from "../../../utils/getLastOnline";
 import getMasterStatus from "../../../utils/getMasterStatus";
 
-const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 const columns = [
@@ -25,7 +25,7 @@ const columns = [
       <Avatar
         src={
           avatar
-            ? `http://91.201.214.201:8443/images/${avatar.imageName}`
+            ? `${config.images}${avatar.imageName}`
             : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
         }
       />
@@ -160,7 +160,7 @@ class MastersTable extends React.Component {
   refresh = () => {
     this.setState({ spinning: true });
     axios
-      .get(`${url}api/v1/user/masters`)
+      .get(`${config.url}api/v1/user/masters`)
       .then((res) => {
         console.log(res.data);
         const { cities, isSuperAdmin } = this.props.userReducer.user;

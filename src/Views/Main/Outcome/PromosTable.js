@@ -20,8 +20,8 @@ import { store } from "../../../store";
 import createLogs from "../../../utils/createLogs";
 import { connect } from "react-redux";
 import generateCitiesId from "../../../utils/generateCitiesId";
+import config from "../../../config/config";
 
-const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 class PromosTable extends React.Component {
@@ -59,7 +59,7 @@ class PromosTable extends React.Component {
     this.setState({ spinning: true });
     const headers = {};
     axios
-      .get(`${url}api/v1/promo${generateCitiesId(true)}`, {
+      .get(`${config.url}api/v1/promo${generateCitiesId(true)}`, {
         headers,
       })
       .then((res) => {
@@ -72,7 +72,7 @@ class PromosTable extends React.Component {
         console.log(err);
       });
     axios
-      .get(`${url}api/v1/market`)
+      .get(`${config.url}api/v1/market`)
       .then((res) => this.setState({ markets: res.data.markets }));
   };
 
@@ -94,7 +94,7 @@ class PromosTable extends React.Component {
 
     axios
       .post(
-        `${url}api/v1/promo?link=${this.state.link}&type=ORDER&marketId=${this.state.promoMarketId}&displayType=${this.state.displayType}`,
+        `${config.url}api/v1/promo?link=${this.state.link}&type=ORDER&marketId=${this.state.promoMarketId}&displayType=${this.state.displayType}`,
         {},
         {
           headers,
@@ -110,7 +110,7 @@ class PromosTable extends React.Component {
 
         const authOptions2 = {
           method: "POST",
-          url: `${url}api/v1/image/promo/${res.data.id}`,
+          url: `${config.url}api/v1/image/promo/${res.data.id}`,
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -133,7 +133,7 @@ class PromosTable extends React.Component {
 
     axios
       .post(
-        `${url}api/v1/promo?link=${this.state.marketLink}&type=MARKET&marketId=${this.state.promoMarketId}&displayType=${this.state.displayTypeMarket}`,
+        `${config.url}api/v1/promo?link=${this.state.marketLink}&type=MARKET&marketId=${this.state.promoMarketId}&displayType=${this.state.displayTypeMarket}`,
         {},
         {
           headers: {},
@@ -146,7 +146,7 @@ class PromosTable extends React.Component {
         const files = new FormData();
         files.append("file", this.state.promoMasterImage);
         axios
-          .post(`${url}api/v1/image/promo/${res.data.id}`, files, {
+          .post(`${config.url}api/v1/image/promo/${res.data.id}`, files, {
             headers: {
               "Content-Type": "multipart/form-data",
             },
@@ -168,7 +168,7 @@ class PromosTable extends React.Component {
     const headers = {};
 
     axios
-      .delete(`${url}api/v1/promo/${id}`, {
+      .delete(`${config.url}api/v1/promo/${id}`, {
         headers,
       })
       .then((res) => {
@@ -200,7 +200,7 @@ class PromosTable extends React.Component {
             height={150}
             src={
               image
-                ? `http://91.201.214.201:8443/images/${image.imageName}`
+                ? `${config.images}${image.imageName}`
                 : "https://sanitationsolutions.net/wp-content/uploads/2015/05/empty-image.png"
             }
             alt=""
@@ -333,7 +333,7 @@ class PromosTable extends React.Component {
                   <img
                     src={
                       this.state.image_update
-                        ? `http://91.201.214.201:8443/images/${this.state.image_update.imageName}`
+                        ? `${config.images}${this.state.image_update.imageName}`
                         : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
                     }
                     alt=""

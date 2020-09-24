@@ -18,6 +18,7 @@ import {
 import axios from "axios";
 import React, { Component, Fragment } from "react";
 import ImageGallery from "react-image-gallery";
+import config from "../../../config/config";
 import createLogs from "../../../utils/createLogs";
 import generateCitiesId from "../../../utils/generateCitiesId";
 import getLastOnline from "../../../utils/getLastOnline";
@@ -34,8 +35,6 @@ const { Content } = Layout;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
 const { Option } = Select;
-
-const url = "http://91.201.214.201:8443/";
 
 export class MasterProfile extends Component {
   constructor(props) {
@@ -65,13 +64,13 @@ export class MasterProfile extends Component {
   refresh = () => {
     this.setState({ spinning: true });
     axios
-      .get(`${url}api/v1/user/${this.props.match.params.username}`, {
+      .get(`${config.url}api/v1/user/${this.props.match.params.username}`, {
         headers: {},
       })
       .then((res) => {
         this.setState({ master: res.data });
         axios
-          .get(`${url}api/v1/history/responded-master/${res.data.id}`, {
+          .get(`${config.url}api/v1/history/responded-master/${res.data.id}`, {
             headers: {},
           })
           .then((res) => {
@@ -85,7 +84,7 @@ export class MasterProfile extends Component {
         console.log(err);
       });
     axios
-      .get(`${url}api/v1/super/user/admins${generateCitiesId(true)}`)
+      .get(`${config.url}api/v1/super/user/admins${generateCitiesId(true)}`)
       .then((res) => this.setState({ admins: res.data }));
   };
 
@@ -93,7 +92,7 @@ export class MasterProfile extends Component {
     message.warn("Подождите");
     this.setState({ spinning: true });
     axios
-      .delete(`${url}api/v1/image/${id}`, {
+      .delete(`${config.url}api/v1/image/${id}`, {
         headers: {},
       })
       .then((res) => {
@@ -110,7 +109,7 @@ export class MasterProfile extends Component {
     this.setState({ spinning: true });
 
     axios
-      .delete(`${url}api/v1/user/${this.state.master?.id}`)
+      .delete(`${config.url}api/v1/user/${this.state.master?.id}`)
       .then((res) => {
         createLogs(`Удалил Юзера ${this.state.master?.username}`);
         this.refresh();
@@ -125,7 +124,7 @@ export class MasterProfile extends Component {
     this.setState({ spinning: true });
 
     axios
-      .delete(`${url}api/v1/image/user/${userId}/avatar`, {
+      .delete(`${config.url}api/v1/image/user/${userId}/avatar`, {
         headers: {},
       })
       .then((res) => {
@@ -142,7 +141,7 @@ export class MasterProfile extends Component {
     this.setState({ spinning: true });
 
     axios
-      .put(`${url}api/v1/user/${this.state.master.username}`, { status })
+      .put(`${config.url}api/v1/user/${this.state.master.username}`, { status })
       .then((res) => {
         createLogs(`Обновил Статус Мастера ${this.state.master.username}`);
 
@@ -161,7 +160,7 @@ export class MasterProfile extends Component {
       message.error("Заполните организацю мастера");
     } else {
       axios
-        .put(`${url}api/v1/user/${master.username}`, {
+        .put(`${config.url}api/v1/user/${master.username}`, {
           masterType,
           orgName,
         })
@@ -209,7 +208,7 @@ export class MasterProfile extends Component {
 
     axios
       .patch(
-        `${url}api/v1/admin/user/block/${this.state.master.id}`,
+        `${config.url}api/v1/admin/user/block/${this.state.master.id}`,
         {},
         {
           headers: {},
@@ -230,7 +229,7 @@ export class MasterProfile extends Component {
     const { managerId } = this.state;
 
     axios
-      .put(`${url}api/v1/user/${this.state.master.username}`, {
+      .put(`${config.url}api/v1/user/${this.state.master.username}`, {
         managerId,
       })
       .then((res) => {
@@ -254,7 +253,7 @@ export class MasterProfile extends Component {
 
     const authOptions = {
       method: "POST",
-      url: `${url}api/v1/image/user/${this.state.master.id}/identification`,
+      url: `${config.url}api/v1/image/user/${this.state.master.id}/identification`,
       data: file,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -289,16 +288,16 @@ export class MasterProfile extends Component {
     master.worksPhotos &&
       master.worksPhotos.map((photos, index) => {
         const obj = {
-          original: `http://91.201.214.201:8443/images/${photos.imageName}`,
-          thumbnail: `http://91.201.214.201:8443/images/${photos.imageName}`,
+          original: `${config.images}${photos.imageName}`,
+          thumbnail: `${config.images}${photos.imageName}`,
         };
         galleryPhotos.push(obj);
       });
     master.identificationPhotos &&
       master.identificationPhotos.map((photos, index) => {
         const obj = {
-          original: `http://91.201.214.201:8443/images/${photos.imageName}`,
-          thumbnail: `http://91.201.214.201:8443/images/${photos.imageName}`,
+          original: `${config.images}${photos.imageName}`,
+          thumbnail: `${config.images}${photos.imageName}`,
         };
         pasportPhotos.push(obj);
       });
@@ -422,7 +421,7 @@ export class MasterProfile extends Component {
                           height: 70,
                           marginRight: 20,
                         }}
-                        src={`http://91.201.214.201:8443/images/${photos.imageName}`}
+                        src={`${config.images}${photos.imageName}`}
                         alt="gg"
                       />
                       <Popconfirm
@@ -547,7 +546,7 @@ export class MasterProfile extends Component {
                         alt="example"
                         src={
                           master.avatar
-                            ? `http://91.201.214.201:8443/images/${master.avatar.imageName}`
+                            ? `${config.images}${master.avatar.imageName}`
                             : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
                         }
                       />

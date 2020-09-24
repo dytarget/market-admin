@@ -24,8 +24,7 @@ import UsersCategory from "./UsersCategory";
 import { store } from "../../../../store";
 import { UserOperations } from "./UserOperations";
 import { useState } from "react";
-
-const url = "http://91.201.214.201:8443/";
+import config from "../../../../config/config";
 
 const Option = Select.Option;
 const ButtonGroup = Button.Group;
@@ -116,11 +115,11 @@ class Admin extends Component {
     this.setState({ loading: true });
 
     axios
-      .get(`${url}api/v1/city/all`)
+      .get(`${config.url}api/v1/city/all`)
       .then((res) => this.setState({ cities: res.data.cities }));
 
     axios
-      .get(`${url}api/v1/super/user/admins`)
+      .get(`${config.url}api/v1/super/user/admins`)
       .then((res) => {
         console.log(res.data);
 

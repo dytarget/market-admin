@@ -68,7 +68,9 @@ export class UserActivityStatistics extends Component {
     this.setState({ spinning: true });
     const { from, to, type } = this.state;
     Axios.get(
-      `${url}api/v1/admin/report/activity/days?from=${from}&to=${to}&type=${type}${generateCitiesId(
+      `${
+        config.url
+      }api/v1/admin/report/activity/days?from=${from}&to=${to}&type=${type}${generateCitiesId(
         false
       )}`
     ).then((res) => {

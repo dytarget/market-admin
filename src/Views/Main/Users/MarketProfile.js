@@ -49,8 +49,6 @@ const viewReportLabelNames = {
   sideFollowCustomerCount: "Переходы по боковому баннеру Заказчики",
 };
 
-const url = "http://91.201.214.201:8443/";
-
 export class MarketProfile extends Component {
   constructor(props) {
     super(props);
@@ -83,10 +81,12 @@ export class MarketProfile extends Component {
 
   refresh = () => {
     axios
-      .get(`${url}api/v1/market/${this.props.match.params.id}`)
+      .get(`${config.url}api/v1/market/${this.props.match.params.id}`)
       .then((res) => {
         axios
-          .get(`${url}api/v1/admin/report/view/${this.props.match.params.id}`)
+          .get(
+            `${config.url}api/v1/admin/report/view/${this.props.match.params.id}`
+          )
           .then((result) => {
             const dataRes = [];
 
@@ -108,10 +108,10 @@ export class MarketProfile extends Component {
         console.log(err);
       });
     axios
-      .get(`${url}api/v1/super/user/admins${generateCitiesId(true)}`)
+      .get(`${config.url}api/v1/super/user/admins${generateCitiesId(true)}`)
       .then((res) => this.setState({ admins: res.data }));
     axios
-      .get(`${url}api/v1/user/market/${this.props.match.params.id}`)
+      .get(`${config.url}api/v1/user/market/${this.props.match.params.id}`)
       .then((res) => {
         this.setState({ userAdmin: res.data });
       });
@@ -121,7 +121,7 @@ export class MarketProfile extends Component {
     this.setState({ spinning: true });
 
     axios
-      .delete(`${url}api/v1/image/user/${userId}/avatar`)
+      .delete(`${config.url}api/v1/image/user/${userId}/avatar`)
       .then((res) => {
         this.refresh();
       })
@@ -134,7 +134,7 @@ export class MarketProfile extends Component {
     this.setState({ spinning: true });
 
     axios
-      .delete(`${url}api/v1/super/market/${this.state.market.id}`)
+      .delete(`${config.url}api/v1/super/market/${this.state.market.id}`)
       .then((res) => {
         createLogs(`Удалил Продавца ${this.state.market.marketName}`);
         this.refresh();
@@ -147,7 +147,7 @@ export class MarketProfile extends Component {
 
   deleteImage = (id) => {
     this.setState({ spinning: true });
-    axios.delete(`${url}api/v1/image/${id}`).then(() => {
+    axios.delete(`${config.url}api/v1/image/${id}`).then(() => {
       message.success("Успешно");
       createLogs(`Удалил Фотографии ${this.state.market.marketName}`);
       this.refresh();
@@ -161,7 +161,7 @@ export class MarketProfile extends Component {
 
     const authOptions = {
       method: "POST",
-      url: `${url}api/v1/image/market/${this.state.market.id}`,
+      url: `${config.url}api/v1/image/market/${this.state.market.id}`,
       data: file,
       headers: {
         "Content-Type": "multipart/form-data",
@@ -190,7 +190,7 @@ export class MarketProfile extends Component {
     });
     const axiosOptionsPhotos = {
       method: "POST",
-      url: `${url}api/v1/image/market/${this.state.market.id}/photos`,
+      url: `${config.url}api/v1/image/market/${this.state.market.id}/photos`,
       data: file2,
       headers: {
         "Content-Type": "multipart/form-data",
@@ -227,7 +227,7 @@ export class MarketProfile extends Component {
     const { managerId } = this.state;
 
     axios
-      .patch(`${url}api/v1/market/${this.state.market.id}`, {
+      .patch(`${config.url}api/v1/market/${this.state.market.id}`, {
         managerId,
       })
       .then((res) => {
@@ -293,8 +293,8 @@ export class MarketProfile extends Component {
       market.photos &&
       market.photos.map((photos, index) => {
         const obj = {
-          original: `http://91.201.214.201:8443/images/${photos.imageName}`,
-          thumbnail: `http://91.201.214.201:8443/images/${photos.imageName}`,
+          original: `${config.images}${photos.imageName}`,
+          thumbnail: `${config.images}${photos.imageName}`,
         };
         galleryPhotos.push(obj);
       });
@@ -442,7 +442,7 @@ export class MarketProfile extends Component {
                           height: 70,
                           marginRight: 20,
                         }}
-                        src={`http://91.201.214.201:8443/images/${photos.imageName}`}
+                        src={`${config.images}${photos.imageName}`}
                         alt="gg"
                       />
                       <Popconfirm
@@ -642,7 +642,7 @@ export class MarketProfile extends Component {
                           }}
                           src={
                             market && market.logo
-                              ? `http://91.201.214.201:8443/images/${market.logo.imageName}`
+                              ? `${config.images}${market.logo.imageName}`
                               : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
                           }
                         />

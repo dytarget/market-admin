@@ -21,8 +21,8 @@ import {
 import axios from "axios";
 import { store } from "../../../store";
 import createLogs from "../../../utils/createLogs";
+import config from "../../../config/config";
 
-const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 export default class AboutService extends React.Component {
@@ -44,7 +44,7 @@ export default class AboutService extends React.Component {
     this.setState({ spinning: true });
     const headers = {};
     axios
-      .get(`${url}api/v1/about-service/about-service`, {
+      .get(`${config.url}api/v1/about-service/about-service`, {
         headers,
       })
       .then((res) => {
@@ -73,7 +73,7 @@ export default class AboutService extends React.Component {
     const { token } = store.getState().userReducer;
     const authOptions = {
       method: "POST",
-      url: `${url}api/v1/about-service?text=${this.state.text}`,
+      url: `${config.url}api/v1/about-service?text=${this.state.text}`,
       headers: {},
       json: true,
     };
@@ -98,7 +98,7 @@ export default class AboutService extends React.Component {
     const { token } = store.getState().userReducer;
     const authOptions = {
       method: "PATCH",
-      url: `${url}api/v1/super/about-service/${this.state.id}?text=${this.state.text}`,
+      url: `${config.url}api/v1/super/about-service/${this.state.id}?text=${this.state.text}`,
       headers: {},
       json: true,
     };
@@ -120,7 +120,7 @@ export default class AboutService extends React.Component {
     this.setState({ spinning: true });
 
     axios
-      .delete(`${url}api/v1/super/about-service/${cityId}`, {
+      .delete(`${config.url}api/v1/super/about-service/${cityId}`, {
         headers: {},
       })
       .then((res) => {

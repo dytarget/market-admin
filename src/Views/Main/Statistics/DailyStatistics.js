@@ -56,14 +56,14 @@ export class DailyStatistics extends Component {
 
   refresh = () => {
     Axios.get(
-      `${url}api/v1/admin/report/daily/income${generateCitiesId(true)}`
+      `${config.url}api/v1/admin/report/daily/income${generateCitiesId(true)}`
     ).then((res) => {
       this.setState({
         incomeReport: [res.data],
       });
     });
     Axios.get(
-      `${url}api/v1/admin/report/daily/order${generateCitiesId(true)}`
+      `${config.url}api/v1/admin/report/daily/order${generateCitiesId(true)}`
     ).then((res) => {
       this.setState({
         orderReport: [
@@ -91,7 +91,9 @@ export class DailyStatistics extends Component {
       });
     });
     Axios.get(
-      `${url}api/v1/admin/report/daily/user/active${generateCitiesId(true)}`
+      `${config.url}api/v1/admin/report/daily/user/active${generateCitiesId(
+        true
+      )}`
     ).then((res) => {
       this.setState({
         activeReport: [
@@ -111,7 +113,9 @@ export class DailyStatistics extends Component {
       });
     });
     Axios.get(
-      `${url}api/v1/admin/report/daily/user/created${generateCitiesId(true)}`
+      `${config.url}api/v1/admin/report/daily/user/created${generateCitiesId(
+        true
+      )}`
     ).then((res) => {
       this.setState({
         createdReport: [

@@ -20,8 +20,7 @@ import Axios from "axios";
 import { store } from "../../../store";
 import ButtonGroup from "antd/lib/button/button-group";
 import createLogs from "../../../utils/createLogs";
-
-const url = "http://91.201.214.201:8443/";
+import config from "../../../config/config";
 
 export const ProductCategoryList = ({
   list,
@@ -54,7 +53,7 @@ export const ProductCategoryList = ({
 
   const deleteProduct = (id, name) => {
     message.warn("Подождите");
-    Axios.delete(`${url}api/v1/product/${id}`)
+    Axios.delete(`${config.url}api/v1/product/${id}`)
       .then((res) => {
         createLogs(`Удалил категорию товаров ID=${name}`);
 
@@ -69,7 +68,7 @@ export const ProductCategoryList = ({
     file.append("file", image);
     const axiosOptions = {
       method: "POST",
-      url: `${url}api/v1/image/product/${id}`,
+      url: `${config.url}api/v1/image/product/${id}`,
       data: file,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -88,7 +87,7 @@ export const ProductCategoryList = ({
 
   const updateProduct = () => {
     message.warn("Подождите");
-    Axios.patch(`${url}api/v1/product/${id}`, {
+    Axios.patch(`${config.url}api/v1/product/${id}`, {
       categoryId,
       cost,
       description,
@@ -122,7 +121,7 @@ export const ProductCategoryList = ({
             alt="product"
             src={
               data.image
-                ? `http://91.201.214.201:8443/images/${data.image.imageName}`
+                ? `${config.images}${data.image.imageName}`
                 : "https://sanitationsolutions.net/wp-content/uploads/2015/05/empty-image.png"
             }
             width={210}

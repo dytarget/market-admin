@@ -3,9 +3,9 @@ import axios from "axios";
 import React from "react";
 import { connect } from "react-redux";
 import { Link } from "react-router-dom";
+import config from "../../../config/config";
 import getLastOnline from "../../../utils/getLastOnline";
 
-const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 const columns = [
@@ -24,7 +24,7 @@ const columns = [
       <Avatar
         src={
           avatar
-            ? `http://91.201.214.201:8443/images/${avatar.imageName}`
+            ? `${config.images}${avatar.imageName}`
             : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
         }
       />
@@ -140,10 +140,10 @@ class ClientsTable extends React.Component {
       console.log("in id posle map", cities);
       cities = "/cities?" + cities.substring(0, cities.lastIndexOf("&"));
     }
-    console.log(`${url}api/v1/user${cities}`);
+    console.log(`${config.url}api/v1/user${cities}`);
 
     axios
-      .get(`${url}api/v1/user${cities}`)
+      .get(`${config.url}api/v1/user${cities}`)
       .then((res) => {
         const result = res.data.users.filter(
           (user) => user.username.length === 10 && /^\d+$/.test(user.username)

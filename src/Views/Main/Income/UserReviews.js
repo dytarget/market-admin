@@ -6,8 +6,8 @@ import { store } from "../../../store";
 import TextArea from "antd/lib/input/TextArea";
 import { connect } from "react-redux";
 import generateCitiesId from "../../../utils/generateCitiesId";
+import config from "../../../config/config";
 
-const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 const types = {
@@ -87,7 +87,7 @@ class UserReview extends React.Component {
     if (user && user.userRights && user.userRights.canLookIncome === true) {
       this.setState({ spinning: true });
       axios
-        .get(`${url}api/v1/support${generateCitiesId(true)}`)
+        .get(`${config.url}api/v1/support${generateCitiesId(true)}`)
         .then((res) => {
           console.log(res.data);
           this.setState({

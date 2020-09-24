@@ -1,5 +1,6 @@
 import React from "react";
 import { Table } from "antd";
+import config from "../../../config/config";
 
 export const PromosTable = ({ promos = [] }) => {
   const columns = [
@@ -29,7 +30,7 @@ export const PromosTable = ({ promos = [] }) => {
           height={150}
           src={
             image
-              ? `http://91.201.214.201:8443/images/${image.imageName}`
+              ? `${config.images}${image.imageName}`
               : "https://sanitationsolutions.net/wp-content/uploads/2015/05/empty-image.png"
           }
           alt=""

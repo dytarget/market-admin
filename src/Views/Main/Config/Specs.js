@@ -21,8 +21,8 @@ import {
 import axios from "axios";
 import { store } from "../../../store";
 import createLogs from "../../../utils/createLogs";
+import config from "../../../config/config";
 
-const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 export default class Specs extends React.Component {
@@ -53,7 +53,7 @@ export default class Specs extends React.Component {
     this.setState({ spinning: true });
     const authOptions = {
       method: "DELETE",
-      url: `${url}api/v1/super/spec/${id}`,
+      url: `${config.url}api/v1/super/spec/${id}`,
       headers: {},
     };
 
@@ -125,7 +125,7 @@ export default class Specs extends React.Component {
     this.cleanUp();
     this.setState({ spinning: true });
     axios
-      .get(`${url}api/v1/spec`)
+      .get(`${config.url}api/v1/spec`)
       .then((res) => {
         this.setState({
           specs: res.data.specializations.sort(
@@ -135,7 +135,7 @@ export default class Specs extends React.Component {
             (a, b) => a.priority - b.priority
           ),
         });
-        axios.get(`${url}api/v1/category`).then((res) => {
+        axios.get(`${config.url}api/v1/category`).then((res) => {
           this.setState({
             spinning: false,
             categories: res.data.categories,
@@ -162,7 +162,7 @@ export default class Specs extends React.Component {
     this.setState({ spinning: true, editModal: false });
     const authOptions = {
       method: "POST",
-      url: `${url}api/v1/super/spec`,
+      url: `${config.url}api/v1/super/spec`,
       data: {
         categoryId: this.state.categoryId,
         specName: this.state.nameRu,
@@ -191,7 +191,7 @@ export default class Specs extends React.Component {
     const { token } = store.getState().userReducer;
     const authOptions = {
       method: "PATCH",
-      url: `${url}api/v1/super/spec/${this.state.id}`,
+      url: `${config.url}api/v1/super/spec/${this.state.id}`,
       data: {
         categoryId: this.state.categoryId,
         specName: this.state.nameRu,

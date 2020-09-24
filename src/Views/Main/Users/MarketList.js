@@ -22,8 +22,8 @@ import TextArea from "antd/lib/input/TextArea";
 import moment from "moment";
 import { connect } from "react-redux";
 import createLogs from "../../../utils/createLogs";
+import config from "../../../config/config";
 
-const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 const columns = [
@@ -42,7 +42,7 @@ const columns = [
       <Avatar
         src={
           logo
-            ? `http://91.201.214.201:8443/images/${logo.imageName}`
+            ? `${config.images}${logo.imageName}`
             : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
         }
       />
@@ -185,7 +185,7 @@ class MarketTable extends React.Component {
     this.setState({ spinning: true });
     const headers = {};
     axios
-      .get(`${url}api/v1/city/all`, {
+      .get(`${config.url}api/v1/city/all`, {
         headers,
       })
       .then((res) => this.setState({ cities: res.data.cities }))
@@ -205,7 +205,7 @@ class MarketTable extends React.Component {
     }
 
     axios
-      .get(`${url}api/v1/market${cities}`, {
+      .get(`${config.url}api/v1/market${cities}`, {
         headers,
       })
       .then((res) => {
@@ -217,7 +217,7 @@ class MarketTable extends React.Component {
           spinning: false,
         });
         axios
-          .get(`${url}api/v1/spec`, {
+          .get(`${config.url}api/v1/spec`, {
             headers,
           })
           .then((res) => {
@@ -236,7 +236,7 @@ class MarketTable extends React.Component {
     this.setState({ editModal: false, spinning: true });
     if (this.state.username && this.state.code) {
       axios
-        .post(`${url}api/v1/super/market`, {
+        .post(`${config.url}api/v1/super/market`, {
           about: this.state.about,
           address: this.state.address,
           industry: this.state.industry,
@@ -265,7 +265,7 @@ class MarketTable extends React.Component {
 
           const authOptions = {
             method: "POST",
-            url: `${url}api/v1/image/market/${resmarket.data.id}`,
+            url: `${config.url}api/v1/image/market/${resmarket.data.id}`,
             data: file,
             headers: {
               "Content-Type": "multipart/form-data",
@@ -281,7 +281,7 @@ class MarketTable extends React.Component {
             });
             const authOptionsPhotos = {
               method: "POST",
-              url: `${url}api/v1/image/market/${resmarket.data.id}/photos`,
+              url: `${config.url}api/v1/image/market/${resmarket.data.id}/photos`,
               data: file2,
               headers: {
                 "Content-Type": "multipart/form-data",
@@ -293,7 +293,7 @@ class MarketTable extends React.Component {
 
               axios({
                 method: "POST",
-                url: `${url}api/v1/admin/market/user`,
+                url: `${config.url}api/v1/admin/market/user`,
                 data: {
                   code: this.state.code,
                   username: this.state.username,
@@ -301,7 +301,7 @@ class MarketTable extends React.Component {
               }).then((user) => {
                 axios({
                   method: "PUT",
-                  url: `${url}api/v1/user/${user.data.username}`,
+                  url: `${config.url}api/v1/user/${user.data.username}`,
                   data: {
                     marketId: resmarket.data.id,
                   },

@@ -21,8 +21,8 @@ import {
 import axios from "axios";
 import { store } from "../../../store";
 import createLogs from "../../../utils/createLogs";
+import config from "../../../config/config";
 
-const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 export default class Cities extends React.Component {
@@ -50,7 +50,7 @@ export default class Cities extends React.Component {
     this.setState({ spinning: true });
     const headers = {};
     axios
-      .get(`${url}api/v1/city/all`, {
+      .get(`${config.url}api/v1/city/all`, {
         headers,
       })
       .then((res) => {
@@ -81,7 +81,7 @@ export default class Cities extends React.Component {
 
     const authOptions = {
       method: "POST",
-      url: `${url}api/v1/super/city`,
+      url: `${config.url}api/v1/super/city`,
       headers: {},
       data: {
         cityName: this.state.cityName,
@@ -109,7 +109,7 @@ export default class Cities extends React.Component {
   handleUpdate = () => {
     const authOptions = {
       method: "PATCH",
-      url: `${url}api/v1/super/city/${this.state.id}`,
+      url: `${config.url}api/v1/super/city/${this.state.id}`,
       headers: {},
       data: {
         cityName: this.state.cityName,
@@ -136,7 +136,7 @@ export default class Cities extends React.Component {
     this.setState({ spinning: true });
 
     axios
-      .delete(`${url}api/v1/super/city/${cityId}`, {
+      .delete(`${config.url}api/v1/super/city/${cityId}`, {
         headers: {},
       })
       .then((res) => {

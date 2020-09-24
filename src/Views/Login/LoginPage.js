@@ -4,8 +4,7 @@ import { connect } from "react-redux";
 import axios from "axios";
 import { userSetAction } from "../../actions/userAction";
 import createLogs from "../../utils/createLogs";
-
-const url = "http://91.201.214.201:8443/";
+import config from "../../config/config";
 
 class LoginPage extends React.Component {
   handleSubmit = (e) => {
@@ -15,18 +14,20 @@ class LoginPage extends React.Component {
         console.log("Received values of form: ", values);
         axios({
           method: "POST",
-          url: `${url}api/v1/auth/admin-login`,
+          url: `${config.url}api/v1/auth/admin-login`,
           data: values,
           headers: {
             "Content-Type": "application/json",
           },
         })
           .then((res) => {
-            axios.get(`${url}api/v1/user/${values.username}`).then((user) => {
-              this.props.userSetAction(true, res.data.accessToken, user.data);
-              createLogs("зашел в систему");
-              this.props.history.push("/");
-            });
+            axios
+              .get(`${config.url}api/v1/user/${values.username}`)
+              .then((user) => {
+                this.props.userSetAction(true, res.data.accessToken, user.data);
+                createLogs("зашел в систему");
+                this.props.history.push("/");
+              });
           })
           .catch((err) => {
             message.error("Неправильный логин или пароль");

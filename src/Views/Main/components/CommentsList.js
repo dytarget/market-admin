@@ -1,6 +1,7 @@
 import React from "react";
 import { List, Avatar, Rate } from "antd";
 import { Link } from "react-router-dom";
+import config from "../../../config/config";
 
 export const CommentsList = ({ comments }) => {
   return (
@@ -8,7 +9,7 @@ export const CommentsList = ({ comments }) => {
       <List
         itemLayout="horizontal"
         dataSource={comments}
-        renderItem={item => (
+        renderItem={(item) => (
           <List.Item>
             <List.Item.Meta
               avatar={
@@ -16,7 +17,7 @@ export const CommentsList = ({ comments }) => {
                   size="large"
                   src={
                     item.user && item.user.avatar
-                      ? `http://91.201.214.201:8443/images/${item.user.avatar.imageName}`
+                      ? `${config.images}${item.user.avatar.imageName}`
                       : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
                   }
                 />

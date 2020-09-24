@@ -90,7 +90,9 @@ export class FinanceStatistics extends Component {
     this.setState({ spinning: true });
     const { from, to } = this.state;
     Axios.get(
-      `${url}api/v1/admin/report/transaction?from=${from}&to=${to}${generateCitiesId(
+      `${
+        config.url
+      }api/v1/admin/report/transaction?from=${from}&to=${to}${generateCitiesId(
         false
       )}`
     ).then((res) => {

@@ -19,8 +19,8 @@ import {
 import axios from "axios";
 import { store } from "../../../store";
 import createLogs from "../../../utils/createLogs";
+import config from "../../../config/config";
 
-const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 export default class FAQTheme extends React.Component {
@@ -41,7 +41,7 @@ export default class FAQTheme extends React.Component {
     this.setState({ spinning: true });
     const headers = {};
     axios
-      .get(`${url}api/v1/faq-category`, {
+      .get(`${config.url}api/v1/faq-category`, {
         headers,
       })
       .then((res) => {
@@ -68,7 +68,7 @@ export default class FAQTheme extends React.Component {
 
     axios
       .post(
-        `${url}api/v1/super/faq/category`,
+        `${config.url}api/v1/super/faq/category`,
         {
           name: this.state.name,
           nameKz: this.state.nameKz,
@@ -90,7 +90,7 @@ export default class FAQTheme extends React.Component {
 
   deleteNews = (id) => {
     axios
-      .delete(`${url}api/v1/super/faq/category/${id}`)
+      .delete(`${config.url}api/v1/super/faq/category/${id}`)
       .then(() => {
         this.refresh();
         createLogs(`Удалил Тему Вопросов ID = ${id}`);
@@ -109,7 +109,7 @@ export default class FAQTheme extends React.Component {
 
     axios
       .patch(
-        `${url}api/v1/super/faq/category/${this.state.id}`,
+        `${config.url}api/v1/super/faq/category/${this.state.id}`,
         {
           name: this.state.name,
           nameKz: this.state.nameKz,

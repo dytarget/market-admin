@@ -28,12 +28,11 @@ import sendPushNotification from "../../../utils/sendPushNotification";
 import sendPushNotificationToMasters from "../../../utils/sendPushNotificationToMasters";
 import { connect } from "react-redux";
 import createLogs from "../../../utils/createLogs";
+import config from "../../../config/config";
 
 const { Content } = Layout;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
-
-const url = "http://91.201.214.201:8443/";
 
 class OrderSingle extends Component {
   constructor(props) {
@@ -55,11 +54,11 @@ class OrderSingle extends Component {
   refresh = async () => {
     this.setState({ spinning: true });
     const res = await axios.get(
-      `${url}api/v1/order?mode=SINGLE&order=${this.props.match.params.id}`
+      `${config.url}api/v1/order?mode=SINGLE&order=${this.props.match.params.id}`
     );
     this.setState({ spinning: false, order: res.data.content[0] });
     axios
-      .get(`${url}api/v1/spec`)
+      .get(`${config.url}api/v1/spec`)
       .then((res) => this.setState({ specs: res.data.specializations }));
   };
 
@@ -67,7 +66,7 @@ class OrderSingle extends Component {
     this.setState({ spinning: true, updateModal: false });
 
     axios
-      .patch(`${url}api/v1/order/${this.state.order.id}`, {
+      .patch(`${config.url}api/v1/order/${this.state.order.id}`, {
         specialization: this.state.specId,
         address: this.state.address,
         description: this.state.description,
@@ -87,7 +86,7 @@ class OrderSingle extends Component {
 
     axios
       .patch(
-        `${url}api/v1/order/${this.state.order.id}`,
+        `${config.url}api/v1/order/${this.state.order.id}`,
         { status },
         {
           headers: {},
@@ -110,7 +109,7 @@ class OrderSingle extends Component {
   sendNotsToMaster = () => {
     const { order } = this.state;
     axios
-      .get(`${url}api/v1/user/masters/${order.specialization.id}`)
+      .get(`${config.url}api/v1/user/masters/${order.specialization.id}`)
       .then((res) => {
         let arr = [];
         res.data.users.forEach((user) => {
@@ -153,8 +152,8 @@ class OrderSingle extends Component {
       order.images &&
       order.images.map((photos, index) => {
         const obj = {
-          original: `http://91.201.214.201:8443/images/${photos.imageName}`,
-          thumbnail: `http://91.201.214.201:8443/images/${photos.imageName}`,
+          original: `${config.images}${photos.imageName}`,
+          thumbnail: `${config.images}${photos.imageName}`,
         };
         images.push(obj);
       });

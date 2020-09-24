@@ -21,8 +21,8 @@ import {
 import axios from "axios";
 import { store } from "../../../store";
 import createLogs from "../../../utils/createLogs";
+import config from "../../../config/config";
 
-const url = "http://91.201.214.201:8443/";
 const { Content } = Layout;
 
 export default class Categories extends React.Component {
@@ -50,7 +50,7 @@ export default class Categories extends React.Component {
     this.setState({ spinning: true });
     const headers = {};
     axios
-      .get(`${url}api/v1/category`, {
+      .get(`${config.url}api/v1/category`, {
         headers,
       })
       .then((res) => {
@@ -82,7 +82,7 @@ export default class Categories extends React.Component {
     const { token } = store.getState().userReducer;
     const authOptions = {
       method: "POST",
-      url: `${url}api/v1/category`,
+      url: `${config.url}api/v1/category`,
       headers: {},
       data: {
         categoryName: this.state.nameRu,
@@ -102,7 +102,7 @@ export default class Categories extends React.Component {
 
           const authOptions2 = {
             method: "POST",
-            url: `${url}api/v1/image/category/${res.data.id}`,
+            url: `${config.url}api/v1/image/category/${res.data.id}`,
             headers: {
               "Content-Type": "multipart/form-data",
             },
@@ -129,7 +129,7 @@ export default class Categories extends React.Component {
   handleUpdate = () => {
     const authOptions = {
       method: "PATCH",
-      url: `${url}api/v1/category/${this.state.id}`,
+      url: `${config.url}api/v1/category/${this.state.id}`,
       headers: {},
       data: {
         categoryName: this.state.nameRu,
@@ -151,7 +151,7 @@ export default class Categories extends React.Component {
 
           const authOptions2 = {
             method: "POST",
-            url: `${url}api/v1/image/category/${this.state.id}`,
+            url: `${config.url}api/v1/image/category/${this.state.id}`,
             headers: {
               "Content-Type": "multipart/form-data",
             },
@@ -181,7 +181,7 @@ export default class Categories extends React.Component {
     this.setState({ spinning: true });
     const authOptions = {
       method: "DELETE",
-      url: `${url}api/v1/super/category/${id}`,
+      url: `${config.url}api/v1/super/category/${id}`,
       headers: {},
     };
 
@@ -220,7 +220,7 @@ export default class Categories extends React.Component {
             style={{ width: 80 }}
             src={
               avatar
-                ? `http://91.201.214.201:8443/images/${avatar.imageName}`
+                ? `${config.images}${avatar.imageName}`
                 : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
             }
             alt=""
@@ -353,7 +353,7 @@ export default class Categories extends React.Component {
                     style={{ width: 100, margin: "30px" }}
                     src={
                       this.state.image_old
-                        ? `http://91.201.214.201:8443/images/${this.state.image_old.imageName}`
+                        ? `${config.images}${this.state.image_old.imageName}`
                         : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
                     }
                     alt=""

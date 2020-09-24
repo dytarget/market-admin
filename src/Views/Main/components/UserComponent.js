@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Card, Icon, Skeleton, Avatar, Tooltip } from "antd";
 import Meta from "antd/lib/card/Meta";
 import { Link } from "react-router-dom";
+import config from "../../../config/config";
 
-const url = "http://91.201.214.201:8443/";
 const sex = { M: "Мужской", F: "Женский" };
 
 export const UserComponent = ({ user, master }) => {
@@ -36,7 +36,7 @@ export const UserComponent = ({ user, master }) => {
               <Avatar
                 src={
                   user.avatar
-                    ? `http://91.201.214.201:8443/images/${user.avatar.imageName}`
+                    ? `${config.images}${user.avatar.imageName}`
                     : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
                 }
               />

@@ -1,6 +1,7 @@
 import React from "react";
 import { List, Avatar } from "antd";
 import { Link } from "react-router-dom";
+import config from "../../../config/config";
 
 export const RespondList = ({ responds, master = false }) => {
   return (
@@ -8,7 +9,7 @@ export const RespondList = ({ responds, master = false }) => {
       <List
         itemLayout="horizontal"
         dataSource={Array.isArray(responds) ? responds.reverse() : []}
-        renderItem={item => (
+        renderItem={(item) => (
           <List.Item>
             <List.Item.Meta
               avatar={
@@ -16,7 +17,7 @@ export const RespondList = ({ responds, master = false }) => {
                   size="large"
                   src={
                     item.respondedMaster.avatar
-                      ? `http://91.201.214.201:8443/images/${item.respondedMaster.avatar.imageName}`
+                      ? `${config.images}${item.respondedMaster.avatar.imageName}`
                       : "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
                   }
                 />
